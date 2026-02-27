@@ -12,16 +12,16 @@
 
 <style>
 body{margin:0;font-family:Segoe UI;background:#f4f6f9;color:#333;}
-.login-box, .section-box{max-width:500px;margin:30px auto;background:white;padding:25px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,0.3);}
+header{background:#0d47a1;color:white;padding:15px;display:flex;justify-content:space-between;align-items:center;}
+h2,h3{margin:5px 0;}
+.login-box, .section-box{max-width:500px;margin:20px auto;background:white;padding:25px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,0.3);}
 input,select{width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #ccc;}
 button{padding:8px 14px;border:none;border-radius:6px;background:#1565c0;color:white;cursor:pointer;}
 button:hover{opacity:.9;}
-header{background:#0d47a1;color:white;padding:15px;display:flex;justify-content:space-between;align-items:center;}
-section{background:white;padding:20px;margin:20px 0;border-radius:10px;box-shadow:0 5px 15px rgba(0,0,0,0.2);}
 table{width:100%;border-collapse:collapse;margin-top:15px;}
 th{background:#0d47a1;color:white;}
 th,td{border:1px solid #ccc;padding:8px;text-align:center;}
-.card-container{display:flex;gap:20px;flex-wrap:wrap;}
+.card-container{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px;}
 .card{flex:1;background:#e3f2fd;padding:20px;border-radius:8px;text-align:center;font-weight:bold;}
 .hidden{display:none;}
 </style>
@@ -50,7 +50,7 @@ th,td{border:1px solid #ccc;padding:8px;text-align:center;}
 <div class="container">
 
 <!-- DASHBOARD -->
-<section>
+<section class="section-box">
 <h3>Dashboard Summary</h3>
 <div class="card-container">
 <div class="card">Employees<br><span id="totalEmployees">0</span></div>
@@ -127,7 +127,7 @@ let employees = [];
 let payrolls = [];
 let chartInstance = null;
 
-// AUTH
+// AUTH STATE
 onAuthStateChanged(auth, user=>{
   if(user){
     loginSection.classList.add("hidden");
@@ -141,6 +141,7 @@ onAuthStateChanged(auth, user=>{
   }
 });
 
+// LOGIN / LOGOUT
 window.login = ()=> signInWithEmailAndPassword(auth,email.value,password.value)
   .catch(e=> loginError.innerText=e.message);
 
@@ -202,7 +203,7 @@ async function loadPayroll(){
   updateDashboard();
 }
 
-// UPDATE DASHBOARD + CHART
+// DASHBOARD + CHART
 function updateDashboard(){
   let totalNet=payrolls.reduce((a,b)=>a+b.net,0);
   let totalDed=payrolls.reduce((a,b)=>a+b.deduction,0);
@@ -219,7 +220,7 @@ function updateDashboard(){
   });
 }
 
-// EXPORT TO EXCEL
+// EXPORT EXCEL
 window.exportExcel = ()=>{
   const wb = XLSX.utils.table_to_book(document.getElementById("payrollTable"));
   XLSX.writeFile(wb,"Enterprise_Payroll_Report.xlsx");
