@@ -4,24 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Enterprise Payroll System</title>
-
-<!-- Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <style>
 body{margin:0;font-family:Segoe UI;background:#f4f6f9;color:#333;}
-header{background:#0d47a1;color:white;padding:15px;display:flex;justify-content:space-between;align-items:center;}
-h2,h3{margin:5px 0;}
-.login-box, .section-box{max-width:500px;margin:20px auto;background:white;padding:25px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,0.3);}
+.login-box{max-width:400px;margin:100px auto;background:white;padding:30px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,0.3);}
 input,select{width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #ccc;}
 button{padding:8px 14px;border:none;border-radius:6px;background:#1565c0;color:white;cursor:pointer;}
 button:hover{opacity:.9;}
+header{background:#0d47a1;color:white;padding:15px;display:flex;justify-content:space-between;align-items:center;}
+section{background:white;padding:20px;margin:20px 0;border-radius:10px;box-shadow:0 5px 15px rgba(0,0,0,0.2);}
 table{width:100%;border-collapse:collapse;margin-top:15px;}
 th{background:#0d47a1;color:white;}
 th,td{border:1px solid #ccc;padding:8px;text-align:center;}
-.card-container{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px;}
+.card-container{display:flex;gap:20px;flex-wrap:wrap;}
 .card{flex:1;background:#e3f2fd;padding:20px;border-radius:8px;text-align:center;font-weight:bold;}
 .hidden{display:none;}
 </style>
@@ -37,7 +33,7 @@ th,td{border:1px solid #ccc;padding:8px;text-align:center;}
 <p id="loginError" style="color:red;"></p>
 </div>
 
-<!-- MAIN APP -->
+<!-- APP -->
 <div id="appSection" class="hidden">
 <header>
 <h2>Enterprise Payroll System</h2>
@@ -49,8 +45,7 @@ th,td{border:1px solid #ccc;padding:8px;text-align:center;}
 
 <div class="container">
 
-<!-- DASHBOARD -->
-<section class="section-box">
+<section>
 <h3>Dashboard Summary</h3>
 <div class="card-container">
 <div class="card">Employees<br><span id="totalEmployees">0</span></div>
@@ -60,38 +55,27 @@ th,td{border:1px solid #ccc;padding:8px;text-align:center;}
 <canvas id="chart"></canvas>
 </section>
 
-<!-- ADD EMPLOYEE -->
-<section class="section-box">
-<h3>Add Employee</h3>
-<input type="text" id="empNameInput" placeholder="Employee Name">
-<input type="text" id="empPositionInput" placeholder="Position">
-<input type="number" id="empSalaryInput" placeholder="Salary">
-<button onclick="addEmployee()">Add Employee</button>
-</section>
-
-<!-- ADD PAYROLL -->
-<section class="section-box">
+<section>
 <h3>Add Payroll</h3>
-<select id="empSelect"></select>
-<select id="monthSelect">
+<input type="text" id="empName" placeholder="Employee Name">
+<select id="month">
 <option>January</option><option>February</option><option>March</option>
 <option>April</option><option>May</option><option>June</option>
 <option>July</option><option>August</option><option>September</option>
 <option>October</option><option>November</option><option>December</option>
 </select>
-<input type="number" id="grossInput" placeholder="Gross Pay">
-<input type="number" id="deductionInput" placeholder="Deduction">
-<button onclick="addPayroll()">Save Payroll</button>
+<input type="number" id="gross" placeholder="Gross Pay">
+<input type="number" id="deduction" placeholder="Total Deduction">
+<button onclick="savePayroll()">Save Payroll</button>
 </section>
 
-<!-- PAYROLL RECORDS -->
-<section class="section-box">
+<section>
 <h3>Payroll Records</h3>
 <button onclick="exportExcel()">Export to Excel</button>
 <table id="payrollTable">
 <thead>
 <tr>
-<th>Name</th><th>Month</th><th>Gross</th><th>Deduction</th><th>Net</th><th>Actions</th>
+<th>Name</th><th>Month</th><th>Gross</th><th>Deduction</th><th>Net</th>
 </tr>
 </thead>
 <tbody></tbody>
@@ -101,14 +85,14 @@ th,td{border:1px solid #ccc;padding:8px;text-align:center;}
 </div>
 </div>
 
+<!-- FIREBASE + APP SCRIPT -->
 <script type="module">
-// Firebase CDN
+// CDN Imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-import { jsPDF } from "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
 
-// Firebase Config
+// Firebase Config (Web App)
 const firebaseConfig = {
   apiKey: "AIzaSyCDhTfNVO5jTqredgHe9t7emxOlvGMczxM",
   authDomain: "enterprise-payroll-2026.firebaseapp.com",
@@ -119,21 +103,20 @@ const firebaseConfig = {
   measurementId: "G-C024KLFQQR"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let employees = [];
-let payrolls = [];
-let chartInstance = null;
+let payrollData=[];
+let chartInstance=null;
 
 // AUTH STATE
-onAuthStateChanged(auth, user=>{
+onAuthStateChanged(auth,user=>{
   if(user){
     loginSection.classList.add("hidden");
     appSection.classList.remove("hidden");
-    userEmail.innerText = user.email;
-    loadEmployees();
+    userEmail.innerText=user.email;
     loadPayroll();
   }else{
     loginSection.classList.remove("hidden");
@@ -141,102 +124,85 @@ onAuthStateChanged(auth, user=>{
   }
 });
 
-// LOGIN / LOGOUT
-window.login = ()=> signInWithEmailAndPassword(auth,email.value,password.value)
-  .catch(e=> loginError.innerText=e.message);
-
-window.logout = ()=> signOut(auth);
-
-// ADD EMPLOYEE
-window.addEmployee = async ()=>{
-  const name = empNameInput.value;
-  const position = empPositionInput.value;
-  const salary = parseFloat(empSalaryInput.value);
-  if(!name || !position || !salary){alert("Fill all fields"); return;}
-  await addDoc(collection(db,"employees"), {name,position,salary});
-  empNameInput.value=""; empPositionInput.value=""; empSalaryInput.value="";
-  loadEmployees();
+// LOGIN & LOGOUT
+window.login = function() {
+  signInWithEmailAndPassword(auth, email.value, password.value)
+  .catch(e => loginError.innerText = e.message);
 }
 
-// LOAD EMPLOYEES
-async function loadEmployees(){
-  const snapshot = await getDocs(collection(db,"employees"));
-  employees = [];
-  empSelect.innerHTML="";
-  snapshot.forEach(doc=>{
-    const e = doc.data(); employees.push(e);
-    const option = document.createElement("option");
-    option.value=e.name; option.innerText=e.name;
-    empSelect.appendChild(option);
+window.logout = function() {
+  signOut(auth);
+}
+
+// SAVE PAYROLL
+window.savePayroll = async function() {
+  const user = auth.currentUser;
+  if(!user){alert("Login first!"); return;}
+  let net = parseFloat(gross.value) - parseFloat(deduction.value);
+  await addDoc(collection(db,"payrolls"),{
+    uid: user.uid,
+    name: empName.value,
+    month: month.value,
+    gross: parseFloat(gross.value),
+    deduction: parseFloat(deduction.value),
+    net: net
   });
-  totalEmployees.innerText = employees.length;
-}
-
-// ADD PAYROLL
-window.addPayroll = async ()=>{
-  const name = empSelect.value;
-  const month = monthSelect.value;
-  const gross = parseFloat(grossInput.value);
-  const deduction = parseFloat(deductionInput.value);
-  if(!name || isNaN(gross) || isNaN(deduction)){alert("Fill all fields"); return;}
-  const net = gross-deduction;
-  await addDoc(collection(db,"payrolls"), {name,month,gross,deduction,net});
-  grossInput.value=""; deductionInput.value="";
+  alert("Payroll Saved");
   loadPayroll();
 }
 
 // LOAD PAYROLL
 async function loadPayroll(){
   const snapshot = await getDocs(collection(db,"payrolls"));
-  payrolls = [];
-  const tbody = document.querySelector("#payrollTable tbody");
-  tbody.innerHTML="";
+  payrollData = [];
+  document.querySelector("#payrollTable tbody").innerHTML = "";
   snapshot.forEach(doc=>{
-    const p = doc.data(); payrolls.push(p);
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${p.name}</td><td>${p.month}</td>
-      <td>₱${p.gross.toFixed(2)}</td><td>₱${p.deduction.toFixed(2)}</td>
-      <td>₱${p.net.toFixed(2)}</td>
-      <td><button onclick='generatePaySlip(${JSON.stringify(p)})'>Pay Slip</button></td>`;
-    tbody.appendChild(tr);
+    let d = doc.data();
+    payrollData.push(d);
+    document.querySelector("#payrollTable tbody").innerHTML += `
+      <tr>
+        <td>${d.name}</td>
+        <td>${d.month}</td>
+        <td>₱${d.gross.toFixed(2)}</td>
+        <td>₱${d.deduction.toFixed(2)}</td>
+        <td>₱${d.net.toFixed(2)}</td>
+      </tr>`;
   });
   updateDashboard();
 }
 
-// DASHBOARD + CHART
+// UPDATE DASHBOARD & CHART
 function updateDashboard(){
-  let totalNet=payrolls.reduce((a,b)=>a+b.net,0);
-  let totalDed=payrolls.reduce((a,b)=>a+b.deduction,0);
+  totalEmployees.innerText = new Set(payrollData.map(p=>p.name)).size;
+  let totalNet = payrollData.reduce((a,b)=>a+b.net,0);
+  let totalDed = payrollData.reduce((a,b)=>a+b.deduction,0);
   totalPayroll.innerText = totalNet.toFixed(2);
   totalDeduction.innerText = totalDed.toFixed(2);
 
-  const months={};
-  payrolls.forEach(p=>months[p.month]=(months[p.month]||0)+p.net);
+  let months={};
+  payrollData.forEach(p=>{
+    months[p.month] = (months[p.month]||0) + p.net;
+  });
 
   if(chartInstance) chartInstance.destroy();
+
   chartInstance = new Chart(document.getElementById("chart"),{
     type:"bar",
-    data:{labels:Object.keys(months),datasets:[{label:"Monthly Payroll",data:Object.values(months),backgroundColor:"#0d47a1"}]}
+    data:{
+      labels:Object.keys(months),
+      datasets:[{
+        label:"Monthly Payroll",
+        data:Object.values(months),
+        backgroundColor:"#0d47a1"
+      }]
+    }
   });
 }
 
-// EXPORT EXCEL
-window.exportExcel = ()=>{
-  const wb = XLSX.utils.table_to_book(document.getElementById("payrollTable"));
+// EXPORT TO EXCEL
+window.exportExcel = function(){
+  let wb = XLSX.utils.table_to_book(document.getElementById("payrollTable"));
   XLSX.writeFile(wb,"Enterprise_Payroll_Report.xlsx");
-}
-
-// GENERATE PAY SLIP PDF
-window.generatePaySlip = (p)=>{
-  const doc = new jsPDF();
-  doc.setFontSize(16); doc.text("Enterprise Payroll System",20,20);
-  doc.setFontSize(12);
-  doc.text(`Name: ${p.name}`,20,40);
-  doc.text(`Month: ${p.month}`,20,50);
-  doc.text(`Gross: ₱${p.gross.toFixed(2)}`,20,60);
-  doc.text(`Deduction: ₱${p.deduction.toFixed(2)}`,20,70);
-  doc.text(`Net Pay: ₱${p.net.toFixed(2)}`,20,80);
-  doc.save(`Payslip_${p.name}_${p.month}.pdf`);
 }
 </script>
 
