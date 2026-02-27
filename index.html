@@ -199,6 +199,7 @@
     getDocs,
   } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
+  // Your Firebase config here (replace with yours)
   const firebaseConfig = {
     apiKey: "AIzaSyCDhTfNVO5jTqredgHe9t7emxOlvGMczxM",
     authDomain: "enterprise-payroll-2026.firebaseapp.com",
@@ -208,6 +209,7 @@
     appId: "1:877928180953:web:3b09060848347031c1e2c8",
   };
 
+  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -241,7 +243,7 @@
   let payrolls = [];
   let chart;
 
-  // AUTH STATE LISTENER
+  // Auth state listener
   onAuthStateChanged(auth, (user) => {
     if (user) {
       loginSection.classList.add("hidden");
@@ -252,22 +254,23 @@
     } else {
       loginSection.classList.remove("hidden");
       appSection.classList.add("hidden");
+      loginError.innerText = "";
     }
   });
 
-  // LOGIN
+  // Login handler
   loginBtn.addEventListener("click", async () => {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
+    const emailValue = document.getElementById("email").value.trim();
+    const passwordValue = document.getElementById("password").value.trim();
     loginError.innerText = "";
 
-    if (!email || !password) {
+    if (!emailValue || !passwordValue) {
       loginError.innerText = "Please enter email and password.";
       return;
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, emailValue, passwordValue);
     } catch (error) {
       if (error.code === "auth/user-not-found") {
         loginError.innerText = "User not found.";
@@ -281,12 +284,12 @@
     }
   });
 
-  // LOGOUT
+  // Logout handler
   logoutBtn.addEventListener("click", async () => {
     await signOut(auth);
   });
 
-  // ADD EMPLOYEE
+  // Add Employee
   addEmployee.addEventListener("click", async () => {
     if (!empName.value || !empPosition.value || !empSalary.value) {
       alert("Please fill all fields");
@@ -303,7 +306,7 @@
     loadEmployees();
   });
 
-  // LOAD EMPLOYEES
+  // Load Employees
   async function loadEmployees() {
     const snapshot = await getDocs(collection(db, "employees"));
     employees = [];
@@ -318,26 +321,26 @@
     totalEmployees.innerText = employees.length;
   }
 
-  // ADD PAYROLL
+  // Add Payroll
   addPayroll.addEventListener("click", async () => {
     if (!grossPay.value || !deduction.value) {
       alert("Please fill all fields");
       return;
     }
-    const net = parseFloat(grossPay.value) - parseFloat(deduction.value);
+    const netPay = parseFloat(grossPay.value) - parseFloat(deduction.value);
     await addDoc(collection(db, "payrolls"), {
       name: empSelect.value,
       month: monthSelect.value,
       gross: parseFloat(grossPay.value),
       deduction: parseFloat(deduction.value),
-      net,
+      net: netPay,
     });
     grossPay.value = "";
     deduction.value = "";
     loadPayroll();
   });
 
-  // LOAD PAYROLL
+  // Load Payrolls
   async function loadPayroll() {
     const snapshot = await getDocs(collection(db, "payrolls"));
     payrolls = [];
@@ -362,27 +365,27 @@
     updateDashboard();
   }
 
-  // UPDATE DASHBOARD
+  // Update Dashboard Summary and Chart
   function updateDashboard() {
-    const totalNet = payrolls.reduce((a, b) => a + b.net, 0);
-    const totalDed = payrolls.reduce((a, b) => a + b.deduction, 0);
+    const totalNet = payrolls.reduce((acc, curr) => acc + curr.net, 0);
+    const totalDed = payrolls.reduce((acc, curr) => acc + curr.deduction, 0);
     totalPayroll.innerText = totalNet.toFixed(2);
     totalDeduction.innerText = totalDed.toFixed(2);
 
-    const months = {};
+    const monthlyData = {};
     payrolls.forEach((p) => {
-      months[p.month] = (months[p.month] || 0) + p.net;
+      monthlyData[p.month] = (monthlyData[p.month] || 0) + p.net;
     });
 
     if (chart) chart.destroy();
     chart = new Chart(document.getElementById("chart"), {
       type: "bar",
       data: {
-        labels: Object.keys(months),
+        labels: Object.keys(monthlyData),
         datasets: [
           {
             label: "Monthly Payroll",
-            data: Object.values(months),
+            data: Object.values(monthlyData),
             backgroundColor: "#0d47a1",
           },
         ],
@@ -390,13 +393,13 @@
     });
   }
 
-  // EXPORT EXCEL
+  // Export Excel
   exportExcel.addEventListener("click", () => {
     const wb = XLSX.utils.table_to_book(document.getElementById("payrollTable"));
     XLSX.writeFile(wb, "Payroll_Report.xlsx");
   });
 
-  // PDF PAYSLIP
+  // Generate PDF Payslip
   window.generatePayslip = (p) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
