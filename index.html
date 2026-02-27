@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Advanced Payroll System</title>
+
+<style>
+body{font-family: Arial, sans-serif;margin:0;background:#f4f6f9;}
+h2{text-align:center;margin-top:20px;}
+button{padding:8px 14px;margin:5px 3px;cursor:pointer;border:none;border-radius:5px;background:#2d6cdf;color:white;font-size:14px;}
+button:hover{background:#1f4fa8;}
+section{display:none;margin:30px auto;padding:25px;width:850px;background:#ffffff;border:1px solid #ccc;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+section h3{margin-top:0;border-bottom:1px solid #ddd;padding-bottom:8px;}
+label{display:block;margin-bottom:10px;}
+input, select{width:100%;max-width:320px;padding:6px;margin-top:5px;box-sizing:border-box;border:1px solid #999;border-radius:5px;font-size:14px;}
+table{width:100%;border-collapse:collapse;margin-top:20px;}
+th, td{border:1px solid #333;padding:8px;text-align:center;}
+th{background:#f0f0f0;}
+.nav-buttons{text-align:center;margin-bottom:20px;}
+.nav-buttons button{min-width:140px;}
+.gov-payslip{width:700px;margin:auto;border:2px solid black;padding:20px;margin-top:20px;background:white;}
+.gov-header{text-align:center;font-size:14px;font-weight:bold;}
+.gov-table{width:100%;border-collapse:collapse;margin-top:10px;}
+.gov-table th,.gov-table td{border:1px solid black;padding:6px;text-align:right;}
+.gov-table td:first-child{text-align:left;}
+.signature-area{text-align:center;margin-top:30px;font-size:13px;}
+.report-box{margin-top:20px;padding:15px;border:1px solid #ccc;}
+</style>
+</head>
+
+<body>
+
+<h2>Advanced Payroll System</h2>
+
+<div class="nav-buttons">
+<button onclick="showSection('addEmployeeSection')">Add Employee</button>
+<button onclick="showSection('employeeRecordsSection')">Employee Records</button>
+<button onclick="showSection('addPayrollSection')">Add Payroll</button>
+<button onclick="showSection('payrollRecordsSection')">Payroll Records</button>
+<button onclick="showSection('userManagementSection')">User Management</button>
+<button onclick="showSection('reportingSection')">Reporting</button>
+</div>
+
+<!-- ADD EMPLOYEE -->
+<section id="addEmployeeSection">
+<h3>Add Employee</h3>
+
+<label>Name:
+<input type="text" id="empName">
+</label>
+
+<label>Office:
+<select id="empOffice">
+<option value="">Select Office</option>
+<option>PSTO-BATANES</option>
+<option>PSTO-CAGAYAN</option>
+<option>PSTO-ISABELA</option>
+<option>PSTO-QUIRINO</option>
+<option>PSTO-NUEVA VIZCAYA</option>
+<option>FINANCE AND ADMINISTRATIVE DIVISION</option>
+<option>TECHNICAL OPERATION SERVICES</option>
+<option>SCHOLARSHIP</option>
+<option>REGIONAL STANDARD AND TESTING LABORATORY</option>
+</select>
+</label>
+
+<label>Employment Type:
+<select id="empType">
+<option value="">Select Type</option>
+<option>Permanent</option>
+<option>Contractual</option>
+</select>
+</label>
+
+<label>Monthly Salary:
+<input type="number" id="empSalary" min="0">
+</label>
+
+<button onclick="saveEmployee()">Save Employee</button>
+</section>
+
+<!-- EMPLOYEE RECORDS -->
+<section id="employeeRecordsSection">
+<h3>Employee Records</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Office</th>
+<th>Type</th>
+<th>Salary</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="employeeTableBody"></tbody>
+</table>
+</section>
+
+<!-- ADD PAYROLL -->
+<section id="addPayrollSection">
+<h3>Add Payroll</h3>
+
+<label>Select Employee:
+<select id="payrollEmployeeSelect"></select>
+</label>
+
+<label>Month:
+<select id="payrollMonth">
+<option value="">Select Month</option>
+<option>January</option><option>February</option><option>March</option>
+<option>April</option><option>May</option><option>June</option>
+<option>July</option><option>August</option><option>September</option>
+<option>October</option><option>November</option><option>December</option>
+</select>
+</label>
+
+<label>Year:
+<input type="number" id="payrollYear" value="2026">
+</label>
+
+<label>Cutoff:
+<select id="payrollCutoff">
+<option value="">Select Cutoff</option>
+<option>1st Cutoff</option>
+<option>2nd Cutoff</option>
+</select>
+</label>
+
+<label>Number of Days Worked:
+<input type="number" id="daysWorked" value="11">
+</label>
+
+<label>Tardiness (Minutes Late):
+<input type="number" id="tardinessMinutes" value="0">
+</label>
+
+<label>Tax %:
+<input type="number" id="taxPercent" value="0">
+</label>
+
+<label>SSS:
+<input type="number" id="sssDeduction" value="0">
+</label>
+
+<h4>PAG-IBIG</h4>
+<label>Regular:<input type="number" id="pagibigRegular" value="0"></label>
+<label>MPL:<input type="number" id="pagibigMPL" value="0"></label>
+<label>MP2:<input type="number" id="pagibigMP2" value="0"></label>
+<label>Calamity:<input type="number" id="pagibigCalamity" value="0"></label>
+
+<button onclick="computePayroll()">Compute Payroll</button>
+<h3 id="payrollResult"></h3>
+<button onclick="savePayroll()" disabled id="savePayrollBtn">Save Payroll</button>
+</section>
+
+<!-- PAYROLL RECORDS -->
+<section id="payrollRecordsSection">
+<h3>Generate Monthly Government Payslip</h3>
+
+<label>Employee:
+<select id="filterEmployee"></select>
+</label>
+
+<label>Month:
+<select id="filterMonth">
+<option value="">Select Month</option>
+<option>January</option><option>February</option><option>March</option>
+<option>April</option><option>May</option><option>June</option>
+<option>July</option><option>August</option><option>September</option>
+<option>October</option><option>November</option><option>December</option>
+</select>
+</label>
+
+<label>Year:
+<input type="number" id="filterYear" value="2026">
+</label>
+
+<button onclick="generatePayslip()">Generate</button>
+<button onclick="printPayslip()">Print</button>
+
+<div id="payslipOutput"></div>
+
+<hr>
+
+<h3>All Payroll Records (Per Cutoff)</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Month</th>
+<th>Year</th>
+<th>Cutoff</th>
+<th>Net</th>
+</tr>
+</thead>
+<tbody id="payrollTableBody"></tbody>
+</table>
+</section>
+
+<script>
+
+let employees = JSON.parse(localStorage.getItem("employees")) || [];
+let payrolls = JSON.parse(localStorage.getItem("payrolls")) || [];
+let users = JSON.parse(localStorage.getItem("users")) || [];
+let currentPayroll = null;
+
+function showSection(id){
+document.querySelectorAll("section").forEach(s=>s.style.display="none");
+document.getElementById(id).style.display="block";
+renderEmployeeTable();
+renderPayrollTable();
+populatePayrollDropdown();
+populateFilterEmployee();
+}
+
+window.onload=function(){
+showSection('addEmployeeSection');
+};
+
+function saveEmployee(){
+let name=empName.value.trim();
+let office=empOffice.value;
+let type=empType.value;
+let salary=parseFloat(empSalary.value);
+if(!name||!office||!type||salary<=0){alert("Complete fields");return;}
+employees.push({name,office,type,salary});
+localStorage.setItem("employees",JSON.stringify(employees));
+empName.value=""; empOffice.value=""; empType.value=""; empSalary.value="";
+renderEmployeeTable();
+populatePayrollDropdown();
+alert("Employee Saved!");
+}
+
+function renderEmployeeTable(){
+employeeTableBody.innerHTML="";
+employees.forEach((e,i)=>{
+employeeTableBody.innerHTML+=`<tr>
+<td>${e.name}</td>
+<td>${e.office}</td>
+<td>${e.type}</td>
+<td>₱${e.salary.toFixed(2)}</td>
+<td>
+<button onclick="editEmployee(${i})">Edit</button>
+<button onclick="deleteEmployee(${i})">Delete</button>
+</td>
+</tr>`;
+});
+}
+
+function editEmployee(i){
+let emp = employees[i];
+empName.value = emp.name;
+empOffice.value = emp.office;
+empType.value = emp.type;
+empSalary.value = emp.salary;
+employees.splice(i,1);
+localStorage.setItem("employees",JSON.stringify(employees));
+renderEmployeeTable();
+populatePayrollDropdown();
+showSection('addEmployeeSection');
+}
+
+function deleteEmployee(i){
+if(confirm("Delete employee?")){
+employees.splice(i,1);
+localStorage.setItem("employees",JSON.stringify(employees));
+renderEmployeeTable();
+populatePayrollDropdown();
+}
+}
+
+function populatePayrollDropdown(){
+payrollEmployeeSelect.innerHTML='<option value="">Select</option>';
+employees.forEach((e,i)=>{
+payrollEmployeeSelect.innerHTML+=`<option value="${i}">${e.name}</option>`;
+});
+}
+
+function populateFilterEmployee(){
+filterEmployee.innerHTML='<option value="">Select</option>';
+employees.forEach(e=>{
+filterEmployee.innerHTML+=`<option value="${e.name}">${e.name}</option>`;
+});
+}
+
+function computePayroll(){
+let idx=payrollEmployeeSelect.value;
+if(!idx){alert("Complete selection");return;}
+let emp=employees[idx];
+let days=parseFloat(daysWorked.value)||0;
+let dailyRate=emp.salary/22;
+let gross=dailyRate*days;
+let tax=gross*(taxPercent.value/100);
+let sss=parseFloat(sssDeduction.value)||0;
+let reg=parseFloat(pagibigRegular.value)||0;
+let mpl=parseFloat(pagibigMPL.value)||0;
+let mp2=parseFloat(pagibigMP2.value)||0;
+let cal=parseFloat(pagibigCalamity.value)||0;
+let totalDeduction=tax+sss+reg+mpl+mp2+cal;
+let net=gross-totalDeduction;
+currentPayroll={name:emp.name,office:emp.office,month:payrollMonth.value,year:payrollYear.value,cutoff:payrollCutoff.value,net};
+payrollResult.innerHTML="<strong>Net Pay: ₱"+net.toFixed(2)+"</strong>";
+savePayrollBtn.disabled=false;
+}
+
+function savePayroll(){
+payrolls.push(currentPayroll);
+localStorage.setItem("payrolls",JSON.stringify(payrolls));
+renderPayrollTable();
+savePayrollBtn.disabled=true;
+alert("Payroll Saved!");
+}
+
+function renderPayrollTable(){
+payrollTableBody.innerHTML="";
+payrolls.forEach(p=>{
+payrollTableBody.innerHTML+=`<tr>
+<td>${p.name}</td>
+<td>${p.month}</td>
+<td>${p.year}</td>
+<td>${p.cutoff}</td>
+<td>₱${p.net.toFixed(2)}</td>
+</tr>`;
+});
+}
+
+function generatePayslip(){
+let emp=filterEmployee.value;
+let month=filterMonth.value;
+let year=filterYear.value;
+let records=payrolls.filter(p=>p.name===emp && p.month===month && p.year==year);
+if(records.length===0){payslipOutput.innerHTML="No record found.";return;}
+let total=0;
+records.forEach(p=>{total+=p.net;});
+payslipOutput.innerHTML=`
+<div class="gov-payslip">
+<div class="gov-header">
+Republic of the Philippines<br>
+DEPARTMENT OF SCIENCE AND TECHNOLOGY<br>
+OFFICIAL MONTHLY PAYSLIP
+</div>
+<hr>
+Employee: <strong>${emp}</strong><br>
+Period: ${month} ${year}
+<hr>
+<table class="gov-table">
+<tr><td>Total Net Pay</td><td>₱${total.toFixed(2)}</td></tr>
+</table>
+<div class="signature-area">
+Certified Correct:<br><br>
+_________________________<br>
+Authorized Signature
+</div>
+</div>`;
+}
+
+function printPayslip(){ window.print(); }
+
+</script>
+</body>
+</html>
