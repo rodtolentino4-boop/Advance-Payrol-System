@@ -2,21 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Enterprise Payroll System</title>
 
 <!-- Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-body { font-family: Segoe UI, sans-serif; margin:0; background:#f4f6f9; }
+body { font-family:Segoe UI, sans-serif; margin:0; background:#f4f6f9; }
 .box { max-width:500px; margin:50px auto; background:white; padding:25px; border-radius:10px; box-shadow:0 10px 20px rgba(0,0,0,0.2);}
 input,select,button { width:100%; padding:8px; margin:6px 0; border-radius:6px; border:1px solid #ccc; }
 button { background:#1565c0; color:white; cursor:pointer; border:none; }
 button:hover{opacity:0.9;}
 .hidden{display:none;}
+table { width:100%; border-collapse:collapse; margin-top:15px; }
+th,td { border:1px solid #ccc; padding:8px; text-align:center; }
+th { background:#1565c0; color:white; }
 </style>
 </head>
 <body>
@@ -54,10 +56,10 @@ button:hover{opacity:0.9;}
 <button id="addPayrollBtn">Save Payroll</button>
 </div>
 
-<!-- PAYSLIP -->
+<!-- PAYSLIP / RECORDS -->
 <div id="payslipBox" class="box hidden">
 <h2>Payroll Records</h2>
-<table id="payrollTable" border="1" style="width:100%;border-collapse:collapse;">
+<table id="payrollTable">
 <thead>
 <tr><th>Name</th><th>Month</th><th>Gross</th><th>Deduction</th><th>Net</th><th>Action</th></tr>
 </thead>
@@ -70,40 +72,45 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebas
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-// Firebase config
+// --- Firebase Config ---
 const firebaseConfig = {
 apiKey:"YOUR_API_KEY",
 authDomain:"YOUR_AUTH_DOMAIN",
 projectId:"YOUR_PROJECT_ID",
 appId:"YOUR_APP_ID"
 };
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// DOM
+// --- DOM Elements ---
 const loginBox=document.getElementById("loginBox");
 const employeeBox=document.getElementById("employeeBox");
 const payrollBox=document.getElementById("payrollBox");
 const payslipBox=document.getElementById("payslipBox");
+
 const email=document.getElementById("email");
 const password=document.getElementById("password");
 const loginBtn=document.getElementById("loginBtn");
 const loginError=document.getElementById("loginError");
+
 const empName=document.getElementById("empName");
 const empPosition=document.getElementById("empPosition");
 const empSalary=document.getElementById("empSalary");
 const addEmployeeBtn=document.getElementById("addEmployeeBtn");
+
 const empSelect=document.getElementById("empSelect");
 const monthSelect=document.getElementById("monthSelect");
 const grossPay=document.getElementById("grossPay");
 const deduction=document.getElementById("deduction");
 const addPayrollBtn=document.getElementById("addPayrollBtn");
+
 const payrollTable=document.querySelector("#payrollTable tbody");
 
 let employees=[], payrolls=[];
 
-// Auth state
+// --- Auth Listener ---
 onAuthStateChanged(auth,user=>{
   if(user){
     loginBox.classList.add("hidden");
@@ -114,7 +121,7 @@ onAuthStateChanged(auth,user=>{
   }
 });
 
-// Login
+// --- Login ---
 loginBtn.addEventListener("click", async ()=>{
   loginError.innerText="";
   try{
@@ -124,7 +131,7 @@ loginBtn.addEventListener("click", async ()=>{
   }
 });
 
-// Add Employee
+// --- Add Employee ---
 addEmployeeBtn.addEventListener("click", async ()=>{
   if(!empName.value || !empPosition.value || !empSalary.value){ alert("Fill all fields"); return;}
   await addDoc(collection(db,"employees"),{name:empName.value,position:empPosition.value,salary:parseFloat(empSalary.value)});
@@ -134,32 +141,39 @@ addEmployeeBtn.addEventListener("click", async ()=>{
   payrollBox.classList.remove("hidden");
 });
 
-// Load Employees
+// --- Load Employees ---
 async function loadEmployees(){
   const snapshot = await getDocs(collection(db,"employees"));
   employees=[]; empSelect.innerHTML="";
   snapshot.forEach(doc=>{
     employees.push(doc.data());
     const option=document.createElement("option");
-    option.value=doc.data().name; option.innerText=doc.data().name;
+    option.value=doc.data().name;
+    option.innerText=doc.data().name;
     empSelect.appendChild(option);
   });
 }
 
-// Add Payroll
+// --- Add Payroll ---
 addPayrollBtn.addEventListener("click", async ()=>{
   if(!grossPay.value || !deduction.value){ alert("Fill all fields"); return;}
   const net=parseFloat(grossPay.value)-parseFloat(deduction.value);
-  await addDoc(collection(db,"payrolls"),{name:empSelect.value,month:monthSelect.value,gross:parseFloat(grossPay.value),deduction:parseFloat(deduction.value),net});
+  await addDoc(collection(db,"payrolls"),{
+    name:empSelect.value,
+    month:monthSelect.value,
+    gross:parseFloat(grossPay.value),
+    deduction:parseFloat(deduction.value),
+    net
+  });
   grossPay.value=""; deduction.value="";
   loadPayrolls();
   payrollBox.classList.add("hidden");
   payslipBox.classList.remove("hidden");
 });
 
-// Load Payrolls
+// --- Load Payrolls ---
 async function loadPayrolls(){
-  const snapshot=await getDocs(collection(db,"payrolls"));
+  const snapshot = await getDocs(collection(db,"payrolls"));
   payrolls=[]; payrollTable.innerHTML="";
   snapshot.forEach(doc=>{
     const p=doc.data(); payrolls.push(p);
@@ -170,7 +184,7 @@ async function loadPayrolls(){
   });
 }
 
-// Generate PDF Payslip
+// --- Generate Payslip ---
 window.generatePayslip=(p)=>{
   const { jsPDF }=window.jspdf;
   const doc=new jsPDF();
@@ -183,5 +197,6 @@ window.generatePayslip=(p)=>{
   doc.save(`Payslip_${p.name}_${p.month}.pdf`);
 };
 </script>
+
 </body>
 </html>
