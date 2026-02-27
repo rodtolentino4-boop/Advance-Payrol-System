@@ -1,94 +1,90 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Government Payroll System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enterprise Payroll System</title>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- XLSX.js -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
 <style>
-body{
-font-family:'Segoe UI',sans-serif;
-margin:0;
-background:linear-gradient(135deg,#1f4fa8,#2d6cdf);
-}
-.container{
-width:1100px;
-margin:40px auto;
-background:white;
-border-radius:15px;
-padding:30px;
-box-shadow:0 15px 40px rgba(0,0,0,0.2);
-}
-h1{text-align:center;color:#1f4fa8;}
-input,select{
-padding:8px;width:280px;margin:6px 0;
-border-radius:6px;border:1px solid #ccc;
-}
-button{
-padding:8px 15px;margin:5px;
-border:none;border-radius:6px;
-background:#1f4fa8;color:white;
-cursor:pointer;
-}
-button:hover{background:#163a7a;}
-.nav{text-align:center;margin-bottom:20px;}
-section{display:none;}
+body{margin:0;font-family:Segoe UI,sans-serif;background:#f4f6f9;color:#333;}
+.login-box{max-width:400px;margin:100px auto;background:white;padding:30px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,0.3);}
+input,select{width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #ccc;}
+button{padding:8px 14px;border:none;border-radius:6px;background:#1565c0;color:white;cursor:pointer;}
+button:hover{opacity:.9;}
+header{background:#0d47a1;color:white;padding:15px;display:flex;justify-content:space-between;align-items:center;}
+section{background:white;padding:20px;margin:20px 0;border-radius:10px;box-shadow:0 5px 15px rgba(0,0,0,0.2);}
 table{width:100%;border-collapse:collapse;margin-top:15px;}
+th{background:#0d47a1;color:white;}
 th,td{border:1px solid #ccc;padding:8px;text-align:center;}
-th{background:#f4f6f9;}
-.payslip{border:2px solid black;padding:20px;margin-top:20px;}
+.card-container{display:flex;gap:20px;flex-wrap:wrap;}
+.card{flex:1;background:#e3f2fd;padding:20px;border-radius:8px;text-align:center;font-weight:bold;}
+.hidden{display:none;}
 </style>
 </head>
 <body>
 
-<div class="container">
-
-<h1>Government Payroll System</h1>
-
-<div id="authSection">
-<h3>Login / Register</h3>
-<input type="email" id="email" placeholder="Email"><br>
-<input type="password" id="password" placeholder="Password"><br>
-<button onclick="register()">Register</button>
+<!-- LOGIN -->
+<div id="loginSection" class="login-box">
+<h2>Enterprise Payroll Login</h2>
+<input type="email" id="email" placeholder="Email">
+<input type="password" id="password" placeholder="Password">
 <button onclick="login()">Login</button>
+<p id="loginError" style="color:red;"></p>
 </div>
 
-<div id="appSection" style="display:none;">
+<!-- APP -->
+<div id="appSection" class="hidden">
 
-<div class="nav">
-<button onclick="showSection('employee')">Employees</button>
-<button onclick="showSection('payroll')">Payroll</button>
-<button onclick="showSection('records')">Payslip</button>
+<header>
+<h2>DOST Enterprise Payroll System</h2>
+<div>
+<span id="userEmail"></span>
 <button onclick="logout()">Logout</button>
 </div>
+</header>
 
-<section id="employee">
-<h3>Add Employee</h3>
-<input id="empName" placeholder="Name"><br>
-<input id="empOffice" placeholder="Office"><br>
-<input id="empSalary" type="number" placeholder="Monthly Salary"><br>
-<button onclick="addEmployee()">Save Employee</button>
+<div class="container">
 
-<table>
+<section>
+<h3>Dashboard Summary</h3>
+<div class="card-container">
+<div class="card">Employees<br><span id="totalEmployees">0</span></div>
+<div class="card">Total Payroll<br>₱<span id="totalPayroll">0.00</span></div>
+<div class="card">Total Deductions<br>₱<span id="totalDeduction">0.00</span></div>
+</div>
+<canvas id="chart"></canvas>
+</section>
+
+<section>
+<h3>Add Payroll</h3>
+<input type="text" id="empName" placeholder="Employee Name">
+<select id="month">
+<option>January</option><option>February</option><option>March</option>
+<option>April</option><option>May</option><option>June</option>
+<option>July</option><option>August</option><option>September</option>
+<option>October</option><option>November</option><option>December</option>
+</select>
+<input type="number" id="gross" placeholder="Gross Pay">
+<input type="number" id="deduction" placeholder="Total Deduction">
+<button onclick="savePayroll()">Save Payroll</button>
+</section>
+
+<section>
+<h3>Payroll Records</h3>
+<button onclick="exportExcel()">Export to Excel</button>
+<table id="payrollTable">
 <thead>
-<tr><th>Name</th><th>Office</th><th>Salary</th></tr>
+<tr>
+<th>Name</th><th>Month</th><th>Gross</th><th>Deduction</th><th>Net</th>
+</tr>
 </thead>
-<tbody id="empTable"></tbody>
+<tbody></tbody>
 </table>
-</section>
-
-<section id="payroll">
-<h3>Create Payroll</h3>
-<select id="payrollEmp"></select><br>
-<input id="daysWorked" type="number" placeholder="Days Worked"><br>
-<input id="sss" type="number" placeholder="SSS"><br>
-<input id="tax" type="number" placeholder="Tax %"><br>
-<button onclick="computePayroll()">Compute & Save</button>
-</section>
-
-<section id="records">
-<h3>Generate Payslip</h3>
-<select id="recordEmp"></select><br>
-<button onclick="generatePayslip()">Generate</button>
-<div id="payslipOutput"></div>
 </section>
 
 </div>
@@ -96,130 +92,133 @@ th{background:#f4f6f9;}
 
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.15.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.15.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.15.0/firebase-firestore.js";
 
+// 🔑 Firebase Web App Config – REPLACE with yours
 const firebaseConfig = {
-  apiKey: "PASTE_YOURS",
-  authDomain: "PASTE_YOURS",
-  projectId: "PASTE_YOURS",
-  storageBucket: "PASTE_YOURS",
-  messagingSenderId: "PASTE_YOURS",
-  appId: "PASTE_YOURS"
+  apiKey: "AIzaSyCDhTfNVO5jTqredgHe9t7emxOlvGMczxM",
+  authDomain: "enterprise-payroll-2026.firebaseapp.com",
+  projectId: "enterprise-payroll-2026",
+  storageBucket: "enterprise-payroll-2026.firebasestorage.app",
+  messagingSenderId: "877928180953",
+  appId: "1:877928180953:web:3b09060848347031c1e2c8",
+  measurementId: "G-C024KLFQQR"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let currentUser = null;
+// Elements
+const loginSection = document.getElementById("loginSection");
+const appSection = document.getElementById("appSection");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const loginError = document.getElementById("loginError");
+const userEmail = document.getElementById("userEmail");
 
-window.register = async function(){
-try{
-await createUserWithEmailAndPassword(auth,email.value,password.value);
-alert("Registered successfully!");
-}catch(e){
-alert(e.message);
-}
-}
+// Payroll Inputs
+const empName = document.getElementById("empName");
+const month = document.getElementById("month");
+const gross = document.getElementById("gross");
+const deduction = document.getElementById("deduction");
 
-window.login = async function(){
-try{
-await signInWithEmailAndPassword(auth,email.value,password.value);
-alert("Login successful!");
-}catch(e){
-alert(e.message);
-}
-}
+let payrollData = [];
+let chartInstance = null;
 
-window.logout = async function(){
-await signOut(auth);
-}
-
-onAuthStateChanged(auth,(user)=>{
-if(user){
-currentUser=user;
-authSection.style.display="none";
-appSection.style.display="block";
-loadEmployees();
-}else{
-authSection.style.display="block";
-appSection.style.display="none";
-}
+// AUTH STATE
+onAuthStateChanged(auth, user => {
+  if(user){
+    loginSection.classList.add("hidden");
+    appSection.classList.remove("hidden");
+    userEmail.innerText = user.email;
+    loadPayroll();
+  } else {
+    loginSection.classList.remove("hidden");
+    appSection.classList.add("hidden");
+  }
 });
 
-window.showSection=function(id){
-document.querySelectorAll("section").forEach(s=>s.style.display="none");
-document.getElementById(id).style.display="block";
+// LOGIN
+window.login = function(){
+  signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value)
+    .catch(e => loginError.innerText = e.message);
 }
 
-window.addEmployee=async function(){
-if(!empName.value||!empSalary.value)return alert("Complete fields");
-await addDoc(collection(db,"users",currentUser.uid,"employees"),{
-name:empName.value,
-office:empOffice.value,
-salary:Number(empSalary.value)
-});
-empName.value=""; empOffice.value=""; empSalary.value="";
-loadEmployees();
-alert("Employee saved!");
+// LOGOUT
+window.logout = function(){
+  signOut(auth);
 }
 
-async function loadEmployees(){
-empTable.innerHTML="";
-payrollEmp.innerHTML="";
-recordEmp.innerHTML="";
-let snap=await getDocs(collection(db,"users",currentUser.uid,"employees"));
-snap.forEach(doc=>{
-let d=doc.data();
-empTable.innerHTML+=`<tr><td>${d.name}</td><td>${d.office}</td><td>${d.salary}</td></tr>`;
-payrollEmp.innerHTML+=`<option>${d.name}</option>`;
-recordEmp.innerHTML+=`<option>${d.name}</option>`;
-});
+// SAVE PAYROLL
+window.savePayroll = async function(){
+  const user = auth.currentUser;
+  if(!user){ alert("Login first!"); return; }
+  let net = parseFloat(gross.value)-parseFloat(deduction.value);
+  await addDoc(collection(db,"payrolls"),{
+    uid: user.uid,
+    name: empName.value,
+    month: month.value,
+    gross: parseFloat(gross.value),
+    deduction: parseFloat(deduction.value),
+    net: net
+  });
+  alert("Payroll Saved");
+  loadPayroll();
 }
 
-window.computePayroll=async function(){
-let snap=await getDocs(collection(db,"users",currentUser.uid,"employees"));
-let empData;
-snap.forEach(doc=>{
-if(doc.data().name==payrollEmp.value){
-empData=doc.data();
+// LOAD PAYROLL
+async function loadPayroll(){
+  const snapshot = await getDocs(collection(db,"payrolls"));
+  payrollData = [];
+  document.querySelector("#payrollTable tbody").innerHTML = "";
+  snapshot.forEach(doc => {
+    let d = doc.data();
+    payrollData.push(d);
+    document.querySelector("#payrollTable tbody").innerHTML += `
+      <tr>
+        <td>${d.name}</td>
+        <td>${d.month}</td>
+        <td>₱${d.gross.toFixed(2)}</td>
+        <td>₱${d.deduction.toFixed(2)}</td>
+        <td>₱${d.net.toFixed(2)}</td>
+      </tr>`;
+  });
+  updateDashboard();
 }
-});
-if(!empData)return alert("Employee not found");
 
-let gross=(empData.salary/22)*Number(daysWorked.value);
-let phil=gross*0.05;
-let net=gross-phil-Number(sss.value)-(gross*(tax.value/100));
+// UPDATE DASHBOARD
+function updateDashboard(){
+  totalEmployees.innerText = new Set(payrollData.map(p => p.name)).size;
+  let totalNet = payrollData.reduce((a,b) => a+b.net,0);
+  let totalDed = payrollData.reduce((a,b) => a+b.deduction,0);
+  totalPayroll.innerText = totalNet.toFixed(2);
+  totalDeduction.innerText = totalDed.toFixed(2);
 
-await addDoc(collection(db,"users",currentUser.uid,"payrolls"),{
-name:empData.name,
-gross,phil,sss:Number(sss.value),tax:Number(tax.value),net
-});
-alert("Payroll saved!");
+  let months = {};
+  payrollData.forEach(p => months[p.month] = (months[p.month]||0)+p.net);
+
+  if(chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(document.getElementById("chart"), {
+    type: "bar",
+    data: {
+      labels: Object.keys(months),
+      datasets: [{
+        label: "Monthly Payroll",
+        data: Object.values(months),
+        backgroundColor: "#0d47a1"
+      }]
+    }
+  });
 }
 
-window.generatePayslip=async function(){
-let snap=await getDocs(collection(db,"users",currentUser.uid,"payrolls"));
-let html="";
-snap.forEach(doc=>{
-let d=doc.data();
-if(d.name==recordEmp.value){
-html+=`
-<div class="payslip">
-<b>Republic of the Philippines</b><br>
-Gross: ₱${d.gross.toFixed(2)}<br>
-PhilHealth: ₱${d.phil.toFixed(2)}<br>
-SSS: ₱${d.sss.toFixed(2)}<br>
-Tax: ${d.tax}%<br>
-<b>Net: ₱${d.net.toFixed(2)}</b>
-</div>`;
-}
-});
-payslipOutput.innerHTML=html;
+// EXPORT TO EXCEL
+window.exportExcel = function(){
+  let wb = XLSX.utils.table_to_book(document.getElementById("payrollTable"));
+  XLSX.writeFile(wb,"Enterprise_Payroll_Report.xlsx");
 }
 
 </script>
