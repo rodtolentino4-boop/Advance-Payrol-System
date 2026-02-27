@@ -4,14 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Enterprise Payroll System</title>
-
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<!-- XLSX.js -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
 <style>
-body{margin:0;font-family:Segoe UI,sans-serif;background:#f4f6f9;color:#333;}
+body{margin:0;font-family:Segoe UI;background:#f4f6f9;color:#333;}
 .login-box{max-width:400px;margin:100px auto;background:white;padding:30px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,0.3);}
 input,select{width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #ccc;}
 button{padding:8px 14px;border:none;border-radius:6px;background:#1565c0;color:white;cursor:pointer;}
@@ -39,9 +35,8 @@ th,td{border:1px solid #ccc;padding:8px;text-align:center;}
 
 <!-- APP -->
 <div id="appSection" class="hidden">
-
 <header>
-<h2>DOST Enterprise Payroll System</h2>
+<h2>Enterprise Payroll System</h2>
 <div>
 <span id="userEmail"></span>
 <button onclick="logout()">Logout</button>
@@ -90,13 +85,14 @@ th,td{border:1px solid #ccc;padding:8px;text-align:center;}
 </div>
 </div>
 
+<!-- FIREBASE + APP SCRIPT -->
 <script type="module">
+// CDN Imports
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.15.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.15.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.15.0/firebase-firestore.js";
-
-// 🔑 Firebase Web App Config – REPLACE with yours
+// Firebase Config (Web App)
 const firebaseConfig = {
   apiKey: "AIzaSyCDhTfNVO5jTqredgHe9t7emxOlvGMczxM",
   authDomain: "enterprise-payroll-2026.firebaseapp.com",
@@ -107,56 +103,42 @@ const firebaseConfig = {
   measurementId: "G-C024KLFQQR"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Elements
-const loginSection = document.getElementById("loginSection");
-const appSection = document.getElementById("appSection");
-const emailInput = document.getElementById("email");
-const passwordInput = document.getElementById("password");
-const loginError = document.getElementById("loginError");
-const userEmail = document.getElementById("userEmail");
-
-// Payroll Inputs
-const empName = document.getElementById("empName");
-const month = document.getElementById("month");
-const gross = document.getElementById("gross");
-const deduction = document.getElementById("deduction");
-
-let payrollData = [];
-let chartInstance = null;
+let payrollData=[];
+let chartInstance=null;
 
 // AUTH STATE
-onAuthStateChanged(auth, user => {
+onAuthStateChanged(auth,user=>{
   if(user){
     loginSection.classList.add("hidden");
     appSection.classList.remove("hidden");
-    userEmail.innerText = user.email;
+    userEmail.innerText=user.email;
     loadPayroll();
-  } else {
+  }else{
     loginSection.classList.remove("hidden");
     appSection.classList.add("hidden");
   }
 });
 
-// LOGIN
-window.login = function(){
-  signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value)
-    .catch(e => loginError.innerText = e.message);
+// LOGIN & LOGOUT
+window.login = function() {
+  signInWithEmailAndPassword(auth, email.value, password.value)
+  .catch(e => loginError.innerText = e.message);
 }
 
-// LOGOUT
-window.logout = function(){
+window.logout = function() {
   signOut(auth);
 }
 
 // SAVE PAYROLL
-window.savePayroll = async function(){
+window.savePayroll = async function() {
   const user = auth.currentUser;
-  if(!user){ alert("Login first!"); return; }
-  let net = parseFloat(gross.value)-parseFloat(deduction.value);
+  if(!user){alert("Login first!"); return;}
+  let net = parseFloat(gross.value) - parseFloat(deduction.value);
   await addDoc(collection(db,"payrolls"),{
     uid: user.uid,
     name: empName.value,
@@ -174,7 +156,7 @@ async function loadPayroll(){
   const snapshot = await getDocs(collection(db,"payrolls"));
   payrollData = [];
   document.querySelector("#payrollTable tbody").innerHTML = "";
-  snapshot.forEach(doc => {
+  snapshot.forEach(doc=>{
     let d = doc.data();
     payrollData.push(d);
     document.querySelector("#payrollTable tbody").innerHTML += `
@@ -189,27 +171,29 @@ async function loadPayroll(){
   updateDashboard();
 }
 
-// UPDATE DASHBOARD
+// UPDATE DASHBOARD & CHART
 function updateDashboard(){
-  totalEmployees.innerText = new Set(payrollData.map(p => p.name)).size;
-  let totalNet = payrollData.reduce((a,b) => a+b.net,0);
-  let totalDed = payrollData.reduce((a,b) => a+b.deduction,0);
+  totalEmployees.innerText = new Set(payrollData.map(p=>p.name)).size;
+  let totalNet = payrollData.reduce((a,b)=>a+b.net,0);
+  let totalDed = payrollData.reduce((a,b)=>a+b.deduction,0);
   totalPayroll.innerText = totalNet.toFixed(2);
   totalDeduction.innerText = totalDed.toFixed(2);
 
-  let months = {};
-  payrollData.forEach(p => months[p.month] = (months[p.month]||0)+p.net);
+  let months={};
+  payrollData.forEach(p=>{
+    months[p.month] = (months[p.month]||0) + p.net;
+  });
 
   if(chartInstance) chartInstance.destroy();
 
-  chartInstance = new Chart(document.getElementById("chart"), {
-    type: "bar",
-    data: {
-      labels: Object.keys(months),
-      datasets: [{
-        label: "Monthly Payroll",
-        data: Object.values(months),
-        backgroundColor: "#0d47a1"
+  chartInstance = new Chart(document.getElementById("chart"),{
+    type:"bar",
+    data:{
+      labels:Object.keys(months),
+      datasets:[{
+        label:"Monthly Payroll",
+        data:Object.values(months),
+        backgroundColor:"#0d47a1"
       }]
     }
   });
@@ -220,7 +204,7 @@ window.exportExcel = function(){
   let wb = XLSX.utils.table_to_book(document.getElementById("payrollTable"));
   XLSX.writeFile(wb,"Enterprise_Payroll_Report.xlsx");
 }
-
 </script>
+
 </body>
 </html>
