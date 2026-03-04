@@ -4,93 +4,211 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Enterprise Payroll System</title>
+
 <style>
-body{margin:0;font-family:Segoe UI;background:#eef1f7;}
-
-.top-header{
-  text-align:center;
-  background:#0d47a1;
-  color:white;
-  padding:20px;
-
-  position: sticky;
-  top: 0;
-  z-index: 1001;
+:root{
+  --primary:#0b3d91;
+  --secondary:#1565c0;
+  --accent:#1e88e5;
+  --light:#f4f6fb;
+  --white:#ffffff;
+  --shadow:0 4px 12px rgba(0,0,0,0.08);
+  --radius:10px;
 }
 
+*{box-sizing:border-box}
 
-.top-header h3{margin:0;font-size:20px;}
-.top-header h4{margin:5px 0 0 0;font-size:16px;font-weight:normal;}
+body{
+  margin:0;
+  font-family:'Segoe UI', Tahoma, sans-serif;
+  background:var(--light);
+  color:#333;
+}
 
-header{
-  background:#0d47a1;
+/* ===== TOP HEADER ===== */
+.top-header{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:20px;
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
   color:white;
-  padding:15px;
+  padding:18px;
+  position:sticky;
+  top:0;
+  z-index:1001;
+  box-shadow:var(--shadow);
+}
+
+.top-header img{
+  height:60px;
+}
+
+.top-header h3{
+  margin:0;
+  font-size:20px;
+  letter-spacing:1px;
+}
+
+.top-header h4{
+  margin:5px 0 0;
+  font-weight:400;
+  font-size:14px;
+  opacity:.9;
+}
+
+/* ===== MAIN HEADER ===== */
+header{
+  background:var(--primary);
+  color:white;
+  padding:15px 25px;
   display:flex;
   justify-content:space-between;
   align-items:center;
-
-  position: sticky;
-  top: 80px; /* taas ng top-header para hindi mag-overlap */
-  z-index: 1000;
-}
-.sidebar{width:230px;background:#1565c0;min-height:100vh;padding:20px;}
-.sidebar button{width:100%;padding:10px;margin-bottom:10px;border:none;border-radius:6px;background:white;color:#1565c0;font-weight:bold;cursor:pointer;}
-.container{display:flex;}
-.content{flex:1;padding:30px;}
-.card{background:white;padding:25px;border-radius:10px;margin-bottom:25px;}
-input,select{width:100%;padding:8px;margin-bottom:12px;border-radius:6px;border:1px solid #ccc;}
-button.action{background:#0d47a1;color:white;border:none;padding:10px;border-radius:6px;cursor:pointer;}
-table{width:100%;border-collapse:collapse;margin-top:15px;}
-th,td{border:1px solid #ccc;padding:8px;text-align:center;}
-th{background:#0d47a1;color:white;}
-.hidden{display:none;}
-.login-box{max-width:400px;margin:120px auto;background:white;padding:30px;border-radius:10px;}
-.flex-row{display:flex;gap:25px;align-items:flex-start;}
-.half{flex:1;}
-@media(max-width:900px){.flex-row{flex-direction:column;}}
-.form-grid{display:grid;gap:12px;}
-//.form-row{display:flex;flex-direction:column;}
-
-
-
-.form-row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
+  position:sticky;
+  top:95px;
+  z-index:1000;
+  box-shadow:var(--shadow);
 }
 
-.form-row label {
-  width: 150px; /* adjust depende sa label length */
-  margin-right: 10px;
-  font-weight: bold;
+header h2{
+  margin:0;
+  font-size:18px;
+  letter-spacing:1px;
 }
 
-.form-row input,
-.form-row select {
-  flex: 1;
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+/* ===== LAYOUT ===== */
+.container{
+  display:flex;
 }
 
+/* ===== SIDEBAR ===== */
+.sidebar{
+  width:240px;
+  background:var(--secondary);
+  min-height:100vh;
+  padding:25px 15px;
+}
 
+.sidebar button{
+  width:100%;
+  padding:12px;
+  margin-bottom:12px;
+  border:none;
+  border-radius:8px;
+  background:white;
+  color:var(--secondary);
+  font-weight:600;
+  cursor:pointer;
+  transition:.3s;
+}
 
+.sidebar button:hover{
+  background:var(--accent);
+  color:white;
+}
 
+/* ===== CONTENT ===== */
+.content{
+  flex:1;
+  padding:35px;
+}
 
+.card{
+  background:var(--white);
+  padding:30px;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  margin-bottom:25px;
+}
 
+/* ===== FORMS ===== */
+input,select{
+  width:100%;
+  padding:10px;
+  margin-bottom:14px;
+  border-radius:8px;
+  border:1px solid #d0d7e2;
+  font-size:14px;
+}
 
+input:focus,select:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px rgba(30,136,229,0.2);
+}
 
-.full-width{grid-column:1/-1;}
+/* ===== BUTTONS ===== */
+button.action{
+  background:var(--primary);
+  color:white;
+  border:none;
+  padding:10px 18px;
+  border-radius:8px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.3s;
+}
+
+button.action:hover{
+  background:var(--accent);
+}
+
+/* ===== TABLE ===== */
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:15px;
+  font-size:14px;
+}
+
+th,td{
+  padding:10px;
+  border-bottom:1px solid #e0e6ef;
+  text-align:center;
+}
+
+th{
+  background:var(--primary);
+  color:white;
+  font-weight:600;
+}
+
+tr:hover{
+  background:#f1f5fb;
+}
+
+/* ===== LOGIN BOX ===== */
+.login-box{
+  max-width:420px;
+  margin:120px auto;
+  background:white;
+  padding:35px;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+
+.hidden{display:none}
+
+.flex-row{
+  display:flex;
+  gap:25px;
+}
+
+.half{flex:1}
+
+@media(max-width:900px){
+  .flex-row{flex-direction:column;}
+  .sidebar{display:none;}
+  header{top:0;}
+}
 </style>
 </head>
 <body>
 
 <div class="top-header">
-  <div class="logo">
- <img src="https://drive.google.com/uc?export=view&id=1Q7GnTgtYnOk_fhxS23ubOUEBxtR-vK2d" alt="DOST Logo">
-  </div>
-  <div class="title">
+  <img src="https://drive.google.com/uc?export=view&id=1Q7GnTgtYnOk_fhxS23ubOUEBxtR-vK2d" alt="DOST Logo">
+  <div>
     <h3>DEPARTMENT OF SCIENCE AND TECHNOLOGY</h3>
     <h4>REGIONAL OFFICE NO. 02 - FINANCE ADMINISTRATIVE SUPPORT SERVICES</h4>
   </div>
@@ -334,6 +452,7 @@ th{background:#0d47a1;color:white;}
 </div>
 </div>
 
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
@@ -429,6 +548,11 @@ const totalPayroll=document.getElementById("totalPayroll");
 const totalNetPay=document.getElementById("totalNetPay");
 let selectedEmployeeData = null;
 
+let role = "admin";
+let empNameLogin = "";
+let empIdLogin = "";
+
+
 
 /* --- LOGIN / LOGOUT --- */
 loginBtn.onclick=async()=>{try{await signInWithEmailAndPassword(auth,email.value,password.value);loginError.textContent="";}catch(e){loginError.textContent="Invalid Email or Password";}};
@@ -449,9 +573,7 @@ onAuthStateChanged(auth, async user => {
       await loadPayrollTable();
       loadYearSelect();
 
-      let role = "admin";
-      let empNameLogin = "";
-      let empIdLogin = "";
+    
 
       const snap = await getDocs(collection(db, "users"));
       snap.forEach(doc => {
@@ -466,22 +588,32 @@ onAuthStateChanged(auth, async user => {
       // ✅ RESET SIDEBAR FIRST
       document.querySelectorAll(".sidebar button")
         .forEach(btn => btn.style.display = "block");
+    
+// STAFF RESTRICTION
 
-      // ✅ STAFF RESTRICTION
-      if (role === "staff") {
-        document.querySelectorAll(".sidebar button").forEach(btn => {
-          if (btn.textContent !== "Generate Pay Slip") {
-            btn.style.display = "none";
-          }
-        });
 
-        showSection("payslip");
 
-        payslipEmpSelect.innerHTML =
-          `<option value="${empIdLogin}">${empNameLogin}</option>`;
-      } else {
-        showSection("dashboard");
-      }
+if (role === "staff") {
+
+  document.querySelectorAll(".sidebar button").forEach(btn => {
+    if (btn.textContent !== "Generate Pay Slip") {
+      btn.style.display = "none";
+    }
+  });
+
+  showSection("payslip");
+
+  // IMPORTANT: I-set mismo ang option
+  payslipEmpSelect.innerHTML =
+    `<option value="${empIdLogin}">${empNameLogin}</option>`;
+
+  payslipEmpSelect.value = empIdLogin;
+  payslipEmpSelect.disabled = true;
+
+} else {
+  showSection("dashboard");
+}
+
 
     } else {
       loginSection.classList.remove("hidden");
@@ -539,7 +671,9 @@ async function loadEmployees(){
   const snap = await getDocs(collection(db,"employees"));
   employeeTable.innerHTML=""; empSelect.innerHTML='<option disabled selected>Select Employee</option>';
   newUserName.innerHTML='<option disabled selected>Select Employee</option>';
+ if (!payslipEmpSelect.disabled) {
   payslipEmpSelect.innerHTML="";
+}
   let total=0;
   snap.forEach(doc=>{
     const e=doc.data();
@@ -759,11 +893,28 @@ function loadYearSelect(){
 generatePayslipBtn.onclick=async()=>{
   const emp=payslipEmpSelect.value; const month=payslipMonthSelect.value; const year=payslipYearSelect.value;
   const snap=await getDocs(collection(db,"payrolls"));
-  let found=null;
-  snap.forEach(doc=>{
-    const p=doc.data();
-    if(p.empId===emp && p.month===month && p.year===year) found=p;
-  });
+ 
+let found = null;
+
+snap.forEach(doc=>{
+  const p = doc.data();
+
+  // ADMIN MATCH (document ID)
+  if(role !== "staff"){
+    if(p.empId === emp && p.month === month && p.year === year){
+      found = p;
+    }
+  }
+
+  // STAFF MATCH (employee name)
+  if(role === "staff"){
+    if(p.empName === empNameLogin && p.month === month && p.year === year){
+      found = p;
+    }
+  }
+});
+
+
   if(found){
     psEmpName.textContent=found.empName;
     psMonthYear.textContent=found.month+" "+found.year;
@@ -786,5 +937,3 @@ psPagibigMPL.textContent = found.pagibigMPL || 0;
 </script>
 </body>
 </html>
-
-
