@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Enterprise Payroll System</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 :root{
@@ -202,6 +203,51 @@ tr:hover{
   .sidebar{display:none;}
   header{top:0;}
 }
+
+@media print {
+
+@page{
+size: A4;
+margin: 20mm;
+}
+
+body *{
+visibility: hidden;
+}
+
+#payslipPrint, #payslipPrint *{
+visibility: visible;
+}
+
+#payslipPrint{
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+}
+
+/* ADD THIS */
+.no-print{
+display:none;
+}
+
+table{
+width:100%;
+border-collapse: collapse;
+}
+
+th, td{
+border:1px solid black;
+padding:8px;
+text-align:left;
+}
+
+}
+
+
+
+
+
 </style>
 </head>
 <body>
@@ -240,17 +286,65 @@ tr:hover{
 <button onclick="showSection('usermanagement')">User Management</button>
 <button onclick="showSection('payroll')">Add Payroll</button>
 <button onclick="showSection('payslip')">Generate Pay Slip</button>
+
+<button onclick="showSection('notifications')">
+  Notifications <span id="notifBadge" style="background:#e53935;color:white;padding:2px 6px;border-radius:12px;font-size:12px;display:none;">0</span>
+</button>
 </div>
 
 <div class="content">
 
+
+
+
 <!-- DASHBOARD -->
+
 <div id="dashboard" class="card hidden">
-<h3>Dashboard</h3>
-<p>Total Employees: <span id="totalEmployees">0</span></p>
-<p>Total Payrolls: <span id="totalPayroll">0</span></p>
-<p>Total Net Pay: <span id="totalNetPay">0</span></p>
+
+<h2>Payroll Analytics Dashboard</h2>
+
+<div class="flex-row">
+
+  <div class="card half">
+    <h3>Total Employees</h3>
+    <h1 id="totalEmployees">0</h1>
+  </div>
+
+  <div class="card half">
+    <h3>Total Payroll Records</h3>
+    <h1 id="totalPayroll">0</h1>
+  </div>
+
+  <div class="card half">
+    <h3>Total Net Pay</h3>
+    <h1 id="totalNetPay">0</h1>
+  </div>
+
+  <div class="card half">
+    <h3>Average Salary</h3>
+    <h1 id="avgSalary">0</h1>
+  </div>
+
 </div>
+
+<br>
+
+<div class="flex-row">
+
+  <div class="card half">
+    <h3>Payroll by Month</h3>
+    <canvas id="payrollChart"></canvas>
+  </div>
+
+  <div class="card half">
+    <h3>Deduction Distribution</h3>
+    <canvas id="deductionChart"></canvas>
+  </div>
+
+</div>
+
+</div>
+
 
 <!-- EMPLOYEES -->
 
@@ -274,15 +368,12 @@ tr:hover{
     <div class="half">
       <table>
         <thead>
-          <tr>
-           
 <tr>
 <th>Name</th>
 <th>Position</th>
 <th>Salary</th>
-
-          </tr>
-        </thead>
+</tr>
+</thead>
         <tbody id="employeeTable"></tbody>
       </table>
     </div>
@@ -413,7 +504,9 @@ tr:hover{
 
 <!-- PAYSLIP -->
 <div id="payslip" class="card hidden">
+
 <h3>Generate Pay Slip</h3>
+
 <select id="payslipEmpSelect"></select>
 <select id="payslipMonthSelect">
 <option>January</option><option>February</option><option>March</option>
@@ -423,8 +516,7 @@ tr:hover{
 </select>
 <select id="payslipYearSelect"></select>
 <button class="action" id="generatePayslipBtn">Generate Pay Slip</button>
-
-<div id="payslipResult" class="hidden" style="margin-top:25px;">
+<div id="payslipPrint" class="hidden" style="margin-top:25px;">
 <h3 style="text-align:center; margin-bottom:5px;">DEPARTMENT OF SCIENCE AND TECHNOLOGY</h3>
 <h4 style="text-align:center; margin-top:0;">REGIONAL OFFICE NO. 02</h4>
 <p><strong>Employee Name:</strong> <span id="psEmpName"></span></p>
@@ -445,12 +537,58 @@ tr:hover{
 <tr><th>Net Pay</th><th id="psNet"></th></tr>
 </tbody>
 </table>
+
+<br>
+
+<button class="action no-print" id="requestSignatureBtn">
+Request Admin Signature
+</button>
+
+<button class="action no-print" onclick="printPayslip()">
+Print Payslip
+</button>
+
+
 </div>
+</div>
+
+<div id="notifications" class="card hidden">
+
+<h3>Notifications</h3>
+
+<table>
+<thead>
+<tr>
+<th>Employee</th>
+<th>Month</th>
+<th>Year</th>
+<th>Status</th>
+
+<th>Message</th>
+<th>Action</th>
+
+
+</tr>
+</thead>
+
+<tbody id="requestTable"></tbody>
+
+</table>
+
+
+
+
+
+
+
 </div>
 
 </div>
 </div>
 </div>
+
+
+
 
 
 <script type="module">
@@ -462,9 +600,12 @@ import {
   addDoc, 
   getDocs, 
   doc, 
-  getDoc 
+  getDoc,
+  updateDoc,
+  serverTimestamp,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-
 
 const firebaseConfig = {
   apiKey:"AIzaSyCDhTfNVO5jTqredgHe9t7emxOlvGMczxM",
@@ -528,7 +669,7 @@ const payslipEmpSelect=document.getElementById("payslipEmpSelect");
 const payslipMonthSelect=document.getElementById("payslipMonthSelect");
 const payslipYearSelect=document.getElementById("payslipYearSelect");
 const generatePayslipBtn=document.getElementById("generatePayslipBtn");
-const payslipResult=document.getElementById("payslipResult");
+const payslipPrint=document.getElementById("payslipPrint");
 const psEmpName=document.getElementById("psEmpName");
 const psMonthYear=document.getElementById("psMonthYear");
 const psDaysWorked=document.getElementById("psDaysWorked");
@@ -542,6 +683,8 @@ const psTax=document.getElementById("psTax");
 const psTardiness=document.getElementById("psTardiness");
 const psTotalDeduction=document.getElementById("psTotalDeduction");
 const psNet=document.getElementById("psNet");
+const requestSignatureBtn = document.getElementById("requestSignatureBtn");
+const requestTable = document.getElementById("requestTable");
 
 const totalEmployees=document.getElementById("totalEmployees");
 const totalPayroll=document.getElementById("totalPayroll");
@@ -569,21 +712,32 @@ onAuthStateChanged(auth, async user => {
       appSection.classList.remove("hidden");
 
       await loadEmployees();
-      await loadUsers();
-      await loadPayrollTable();
-      loadYearSelect();
+await loadUsers();
+await loadPayrollTable();
+await loadDashboardAnalytics();
+loadYearSelect();
 
-    
+/* GET USER ROLE FIRST */
 
-      const snap = await getDocs(collection(db, "users"));
-      snap.forEach(doc => {
-        const d = doc.data();
-        if (d.uid === user.uid) {
-          role = d.role;
-          empNameLogin = d.employeeName;
-          empIdLogin = d.employeeId;
-        }
-      });
+
+/* GET USER ROLE */
+const userSnap = await getDocs(collection(db, "users"));
+
+userSnap.forEach(doc => {
+  const d = doc.data();
+
+  if (d.uid === user.uid) {
+    role = d.role;
+    empNameLogin = d.employeeName;
+    empIdLogin = d.employeeId;
+  }
+});
+
+/* LOAD REQUESTS */
+await loadRequests();
+//await updateNotifBadge();
+
+
 
       // ✅ RESET SIDEBAR FIRST
       document.querySelectorAll(".sidebar button")
@@ -596,14 +750,16 @@ onAuthStateChanged(auth, async user => {
 if (role === "staff") {
 
   document.querySelectorAll(".sidebar button").forEach(btn => {
-    if (btn.textContent !== "Generate Pay Slip") {
+    if (
+      btn.textContent !== "Generate Pay Slip" &&
+      btn.textContent !== "Notifications"
+    ) {
       btn.style.display = "none";
     }
   });
 
   showSection("payslip");
 
-  // IMPORTANT: I-set mismo ang option
   payslipEmpSelect.innerHTML =
     `<option value="${empIdLogin}">${empNameLogin}</option>`;
 
@@ -611,9 +767,10 @@ if (role === "staff") {
   payslipEmpSelect.disabled = true;
 
 } else {
-  showSection("dashboard");
-}
 
+  showSection("dashboard");
+
+}
 
     } else {
       loginSection.classList.remove("hidden");
@@ -648,23 +805,37 @@ window.showSection = showSection;
 empSalary.addEventListener("input",()=>{empPhilhealth.value=(parseFloat(empSalary.value)*0.05||0).toFixed(2);});
 
 /* --- ADD EMPLOYEE --- */
-saveEmployeeBtn.onclick=async()=>{
-  if(!empName.value || !empPosition.value || !empSalary.value){alert("Fill all fields"); return;}
-  await addDoc(collection(db,"employees"),{
-    name: empName.value,
-    position: empPosition.value,
-    salary: parseFloat(empSalary.value),
-    sss: parseFloat(empSSS.value)||0,
-    pagibigSavings: parseFloat(empPagibigSavings.value)||0,
-    pagibigMPL: parseFloat(empPagibigMPL.value)||0,
-    pagibigMP2: parseFloat(empPagibigMP2.value)||0,
-    philhealth: parseFloat(empPhilhealth.value)||0
-  });
-  empName.value="";empPosition.value="";empSalary.value="";empSSS.value="";
-  empPagibigSavings.value="";empPagibigMPL.value="";empPagibigMP2.value="";
-  empPhilhealth.value="";
-  await loadEmployees();
+
+saveEmployeeBtn.onclick = async () => {
+  try {
+
+    if(!empName.value || !empPosition.value || !empSalary.value){
+      alert("Fill all fields");
+      return;
+    }
+
+    await addDoc(collection(db,"employees"),{
+      name: empName.value,
+      position: empPosition.value,
+      salary: parseFloat(empSalary.value),
+      sss: parseFloat(empSSS.value)||0,
+      pagibigSavings: parseFloat(empPagibigSavings.value)||0,
+      pagibigMPL: parseFloat(empPagibigMPL.value)||0,
+      pagibigMP2: parseFloat(empPagibigMP2.value)||0,
+      philhealth: parseFloat(empPhilhealth.value)||0
+    });
+
+    alert("Employee added successfully");
+
+    await loadEmployees();
+
+  } catch(error){
+    console.error(error);
+    alert(error.message);
+  }
 };
+
+
 
 /* --- LOAD EMPLOYEES --- */
 async function loadEmployees(){
@@ -672,7 +843,7 @@ async function loadEmployees(){
   employeeTable.innerHTML=""; empSelect.innerHTML='<option disabled selected>Select Employee</option>';
   newUserName.innerHTML='<option disabled selected>Select Employee</option>';
  if (!payslipEmpSelect.disabled) {
-  payslipEmpSelect.innerHTML="";
+  payslipEmpSelect.innerHTML='<option disabled selected>Select Employee</option>';
 }
   let total=0;
   snap.forEach(doc=>{
@@ -739,8 +910,6 @@ await signOut(auth);
 
 
 
-
-/* --- LOAD USERS --- */
 
 /* --- LOAD USERS --- */
 async function loadUsers(){
@@ -819,34 +988,47 @@ const totalDed = ph + s + p + taxDeduction + tardDeduction;
 
 [daysWorked,tardiness,taxPercent].forEach(el=>el.addEventListener("input",computePayroll));
 
-savePayrollBtn.onclick=async()=>{
-  if(!empSelect.value || !cutoffSelect.value){alert("Select employee and cutoff"); return;}
-  await addDoc(collection(db,"payrolls"),{
-    empId:empSelect.value,
-    empName:empSelect.options[empSelect.selectedIndex].text,
-    position:positionEl.value,
-    salary:parseFloat(salaryEl.value),
-    month:monthSelect.value,
-    year:yearSelect.value,
-    daysWorked:parseFloat(daysWorked.value),
-    cutoff:cutoffSelect.value,
-    tardiness:parseFloat(tardiness.value),
-    taxPercent:parseFloat(taxPercent.value),
-    philhealth:parseFloat(philhealth.value),
-    sss:parseFloat(sss.value),
-   
-pagibigSavings: selectedEmployeeData ? selectedEmployeeData.pagibigSavings : 0,
-pagibigMP2: selectedEmployeeData ? selectedEmployeeData.pagibigMP2 : 0,
-pagibigMPL: selectedEmployeeData ? selectedEmployeeData.pagibigMPL : 0,
+savePayrollBtn.onclick = async () => {
 
+  try{
 
+    if(!empSelect.value || !cutoffSelect.value){
+      alert("Select employee and cutoff");
+      return;
+    }
 
-     grossPay:parseFloat(grossPay.value),
-    totalDeduction:parseFloat(deduction.value),
-    netPay:parseFloat(netPay.value)
-  });
-  alert("Payroll saved!");
-  await loadPayrollTable();
+    await addDoc(collection(db,"payrolls"),{
+      empId:empSelect.value,
+      empName:empSelect.options[empSelect.selectedIndex].text,
+      position:positionEl.value,
+      salary:parseFloat(salaryEl.value),
+      month:monthSelect.value,
+      year:yearSelect.value,
+      daysWorked:parseFloat(daysWorked.value),
+      cutoff:cutoffSelect.value,
+      tardiness:parseFloat(tardiness.value),
+      taxPercent:parseFloat(taxPercent.value),
+      philhealth:parseFloat(philhealth.value),
+      sss:parseFloat(sss.value),
+
+      pagibigSavings:selectedEmployeeData?.pagibigSavings || 0,
+      pagibigMP2:selectedEmployeeData?.pagibigMP2 || 0,
+      pagibigMPL:selectedEmployeeData?.pagibigMPL || 0,
+
+      grossPay:parseFloat(grossPay.value),
+      totalDeduction:parseFloat(deduction.value),
+      netPay:parseFloat(netPay.value)
+    });
+
+    alert("Payroll saved!");
+
+    await loadPayrollTable();
+    await loadDashboardAnalytics();
+
+  }catch(error){
+    console.error(error);
+    alert(error.message);
+  }
 };
 
 /* --- LOAD PAYROLL TABLE --- */
@@ -899,10 +1081,11 @@ let found = null;
 snap.forEach(doc=>{
   const p = doc.data();
 
-  // ADMIN MATCH (document ID)
   if(role !== "staff"){
     if(p.empId === emp && p.month === month && p.year === year){
-      found = p;
+      if(!found){
+        found = p;
+      }
     }
   }
 
@@ -931,9 +1114,344 @@ psPagibigMPL.textContent = found.pagibigMPL || 0;
     psTardiness.textContent=found.tardiness;
     psTotalDeduction.textContent=found.totalDeduction;
     psNet.textContent=found.netPay;
-    payslipResult.classList.remove("hidden");
-  }else{alert("No payroll found for this employee in selected month/year."); payslipResult.classList.add("hidden");}
+    payslipPrint.classList.remove("hidden");
+  }else{alert("No payroll found for this employee in selected month/year."); payslipPrint.classList.add("hidden");}
 };
+
+// ------------------- EXISTING CODE -------------------
+// Firebase config
+// Auth state
+// Load employees
+// Payroll functions
+// Payslip functions
+// ------------------- END EXISTING CODE -------------------
+
+// ------------------- STEP 4: DASHBOARD ANALYTICS -------------------
+
+// Variables for analytics
+const avgSalary = document.getElementById("avgSalary");
+let payrollChart;
+let deductionChart;
+
+// Load Dashboard Analytics
+async function loadDashboardAnalytics(){
+  const payrollSnap = await getDocs(collection(db,"payrolls"));
+
+  let totalSalary = 0;
+  let count = 0;
+
+  let monthData = {
+    January:0, February:0, March:0, April:0,
+    May:0, June:0, July:0, August:0,
+    September:0, October:0, November:0, December:0
+  };
+
+  let deductionTotals = {
+    philhealth:0,
+    sss:0,
+    pagibig:0,
+    tax:0
+  };
+
+  payrollSnap.forEach(doc=>{
+    const p = doc.data();
+
+    //totalSalary += p.salary;
+    totalSalary += p.netPay;
+    count++;
+
+    monthData[p.month] += p.netPay;
+
+    deductionTotals.philhealth += p.philhealth;
+    deductionTotals.sss += p.sss;
+    deductionTotals.pagibig += (p.pagibigSavings || 0) + (p.pagibigMP2 || 0) + (p.pagibigMPL || 0);
+    deductionTotals.tax += p.grossPay * (p.taxPercent/100);
+  });
+
+  avgSalary.textContent = count > 0 ? (totalSalary/count).toFixed(2) : "0.00";
+
+  renderPayrollChart(monthData);
+  renderDeductionChart(deductionTotals);
+}
+
+// Chart rendering functions
+function renderPayrollChart(data){
+  const ctx = document.getElementById("payrollChart");
+  if(payrollChart) payrollChart.destroy();
+
+  payrollChart = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:Object.keys(data),
+      datasets:[{
+        label:'Monthly Net Payroll',
+        data:Object.values(data),
+        backgroundColor:'#1565c0'
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false}}
+    }
+  });
+}
+
+function renderDeductionChart(data){
+  const ctx = document.getElementById("deductionChart");
+  if(deductionChart) deductionChart.destroy();
+
+  deductionChart = new Chart(ctx,{
+    type:'pie',
+    data:{
+      labels:['Philhealth','SSS','Pagibig','Tax'],
+      datasets:[{
+        data:[data.philhealth,data.sss,data.pagibig,data.tax],
+        backgroundColor:['#1e88e5','#43a047','#fb8c00','#e53935']
+      }]
+    },
+    options:{responsive:true}
+  });
+}
+
+// ------------------- END STEP 4 -------------------
+
+requestSignatureBtn.onclick = async () => {
+
+  if (!payslipMonthSelect.value || !payslipYearSelect.value) {
+    alert("Please select Month and Year first.");
+    return;
+  }
+
+  try {
+
+    const q = query(
+      collection(db,"payslip_requests"),
+      where("empId","==",empIdLogin),
+      where("month","==",payslipMonthSelect.value),
+      where("year","==",payslipYearSelect.value)
+    );
+
+    const snap = await getDocs(q);
+
+    if(!snap.empty){
+      alert("You already sent a request for this payslip.");
+      return;
+    }
+
+    await addDoc(collection(db,"payslip_requests"),{
+      empId: empIdLogin,
+      empName: empNameLogin,
+      month: payslipMonthSelect.value,
+      year: payslipYearSelect.value,
+      status: "Pending",
+      message: "Waiting for admin signature",
+      createdAt: serverTimestamp()
+    });
+
+    alert("Request sent to admin successfully.");
+
+    loadRequests();
+    updateNotifBadge();
+
+  } catch(error) {
+
+    console.error(error);
+    alert("Failed to send request.");
+
+  }
+
+};
+
+//const requestTable = document.getElementById("requestTable");
+
+
+async function loadRequests() {
+
+  const snap = await getDocs(collection(db,"payslip_requests"));
+  requestTable.innerHTML = "";
+
+  for (const docSnap of snap.docs) {
+
+    const r = docSnap.data();
+    const id = docSnap.id;
+
+    if(role === "staff" && r.empId !== empIdLogin){
+      continue;
+    }
+
+    let actions = "";
+
+    if(role === "admin" && r.status === "Pending"){
+      actions = `
+        <button class="action" onclick="approveRequest('${id}')">Approve</button>
+        <button class="action" onclick="rejectRequest('${id}')">Reject</button>
+      `;
+    }
+
+    if(role === "staff"){
+      actions = r.status;
+    }
+
+    const empName = r.empName || "Unknown Employee";
+
+    requestTable.innerHTML += `
+    <tr>
+      <td>${empName}</td>
+      <td>${r.month}</td>
+      <td>${r.year}</td>
+      <td>${r.status}</td>
+      <td>${r.message}</td>
+      <td>${actions}</td>
+    </tr>
+    `;
+  }
+
+  updateNotifBadge();
+}
+
+
+
+window.approveRequest = async function(id){
+  try {
+    const ref = doc(db,"payslip_requests",id);
+
+    await updateDoc(ref,{
+      status:"Approved",
+      message:"Signed by Admin"
+    });
+
+    alert("Payslip approved and signed.");
+    await loadRequests(); // reload table + update badge
+  } catch(error) {
+    console.error("Error approving request:", error);
+    alert("Failed to approve request. Try again.");
+  }
+}
+
+window.rejectRequest = async function(id){
+  try {
+    const ref = doc(db,"payslip_requests",id);
+
+    await updateDoc(ref,{
+      status:"Rejected",
+      message:"Rejected by Admin"
+    });
+
+    alert("Request rejected.");
+    await loadRequests(); // reload table + update badge
+  } catch(error) {
+    console.error("Error rejecting request:", error);
+    alert("Failed to reject request. Try again.");
+  }
+}
+
+async function updateNotifBadge(){
+
+  const snap = await getDocs(collection(db,"payslip_requests"));
+  let pending = 0;
+
+  snap.forEach(doc=>{
+    const d = doc.data();
+
+    // ADMIN sees all pending
+    if(role === "admin"){
+      if(d.status === "Pending"){
+        pending++;
+      }
+    }
+
+    // STAFF sees only their pending request
+    if(role === "staff"){
+      if(d.status === "Pending" && d.empId === empIdLogin){
+        pending++;
+      }
+    }
+
+  });
+
+  const badge = document.getElementById("notifBadge");
+
+  if(pending > 0){
+    badge.style.display = "inline-block";
+    badge.textContent = pending;
+  }else{
+    badge.style.display = "none";
+  }
+
+}
+
+window.updateNotifBadge = updateNotifBadge;
+window.loadRequests = loadRequests;
+
+
+async function getEmployeeName(empId){
+  const ref = doc(db,"employees",empId);
+  const snap = await getDoc(ref);
+
+  if(snap.exists()){
+    return snap.data().name;
+  }
+
+  return "Unknown Employee";
+}
+
+
+
+function printPayslip() {
+  const element = document.getElementById("payslipPrint");
+
+  if (!element.classList.contains("hidden")) {
+
+    const printWindow = window.open('', '', 'height=800,width=800');
+
+    printWindow.document.write('<html><head><title>Payslip</title>');
+    printWindow.document.write(`
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h3, h4 { text-align: center; margin: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+        .signature { margin-top: 50px; display: flex; justify-content: space-between; }
+        .signature div { text-align: center; }
+        img { display: block; margin: 0 auto 10px; height: 60px; }
+      </style>
+    `);
+    printWindow.document.write('</head><body>');
+
+    printWindow.document.write('<img src="https://drive.google.com/uc?export=view&id=1Q7GnTgtYnOk_fhxS23ubOUEBxtR-vK2d">');
+
+    printWindow.document.write(element.innerHTML);
+
+    printWindow.document.write(`
+      <div class="signature">
+        <div>
+          <hr style="width:200px;">
+          <p>Employee Signature</p>
+        </div>
+        <div>
+          <hr style="width:200px;">
+          <p>Accounting Head</p>
+        </div>
+      </div>
+    `);
+
+    printWindow.document.write('</body></html>');
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+
+  } else {
+    alert("Please generate the payslip first!");
+  }
+}
+
+/* IMPORTANT FIX */
+window.printPayslip = printPayslip;
+
 </script>
+
+
 </body>
 </html>
