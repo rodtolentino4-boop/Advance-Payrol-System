@@ -1194,6 +1194,7 @@ Add Employee Record
 <th>Date From</th>
 <th>Date To</th>
 <th>Status</th>
+<th>Salary</th>
 <th>Action</th>
 </tr>
 </thead>
@@ -1281,25 +1282,12 @@ box-shadow:0 10px 30px rgba(0,0,0,0.25);
 
 
 
-
-
-
-
-
-
-
 <button class="action" id="saveServiceRecordBtn">Save</button>
 
 <button class="action" style="background:#e53935"
 onclick="closeServiceRecordForm()">Close</button>
 
 </div>
-
-
-
-
-
-
 
 
 
@@ -1677,8 +1665,6 @@ await loadRequests();
 //await updateNotifBadge();
 
 
-
-      // ✅ RESET SIDEBAR FIRST
       document.querySelectorAll(".sidebar button")
         .forEach(btn => btn.style.display = "block");
     
