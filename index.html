@@ -14,9 +14,6 @@ header{background:#1e3a5f;color:white;padding:15px;text-align:center;font-size:2
 
 .card{background:white;border-radius:10px;padding:15px;margin-bottom:15px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
 
-
-
-
 input,textarea,button,select{
 padding:8px;margin:5px;border-radius:5px;border:1px solid #ccc;width:95%;
 }
@@ -66,14 +63,40 @@ table {
 }
 
 td {
-  white-space: normal;        /* allow wrap */
-  word-break: break-word;     /* break long words */
+  white-space: normal;        
+  word-break: break-word;    
 }
 
 #searchRecords {
   border:2px solid #1e3a5f;
 }
 
+
+.login-wrapper{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  background:linear-gradient(135deg,#1e3a5f,#4f8bc9);
+}
+
+.login-box{
+  background:white;
+  padding:30px;
+  border-radius:15px;
+  width:320px;
+  text-align:center;
+  box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+
+.login-box h2{
+  margin-bottom:20px;
+}
+
+.login-box input{
+  width:100%;
+  margin:10px 0;
+}
 
 </style>
 </head>
@@ -85,11 +108,21 @@ td {
 <div class="container">
 
 <!-- LOGIN -->
-<div id="loginPage" class="card">
-<h2>Login</h2>
-<input id="username" placeholder="Email">
-<input id="password" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
+<div id="loginPage">
+
+  <div class="login-wrapper">
+
+    <div class="login-box">
+      <h2>🔐 Login System</h2>
+
+      <input id="username" placeholder="Email">
+      <input id="password" type="password" placeholder="Password">
+
+      <button onclick="login()">Login</button>
+    </div>
+
+  </div>
+
 </div>
 
 <!-- STAFF -->
@@ -278,30 +311,41 @@ td {
   <div id="userList"></div>
 </div>
 
-
-
-
-
-
-
-
   </div>
 
 </div>
 
 </div>
 
-
-
-
-
 <!-- REVIEW -->
+
 <div id="reviewPage" class="hidden">
+
 <div class="topbar">
 <h2 id="reviewTitle"></h2>
 <button onclick="logout()">Logout</button>
 </div>
-<div id="reviewList"></div>
+
+<div class="row">
+
+  <!-- LEFT -->
+  <div class="col">
+    <div class="card">
+      <h3>✅ Approved Canvass</h3>
+      <div id="reviewApproved"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="col">
+    <div class="card">
+      <h3>⏳ Pending Review</h3>
+      <div id="reviewPending"></div>
+    </div>
+  </div>
+
+</div>
+
 </div>
 
 </div>
@@ -408,7 +452,6 @@ onAuthStateChanged(auth, async (user) => {
 
 // USERS
 
-
 let currentUser=null;
 
 // LOGIN
@@ -435,7 +478,7 @@ window.login = async function(){
     // GET USERS SA FIRESTORE
     let users = await getUsers();
 
-    // 🔥 FIX: mas safe match
+    //  FIX: mas safe match
     let found = users.find(u => 
       u.email && u.email.toLowerCase().trim() === user.email.toLowerCase().trim()
     );
@@ -504,8 +547,6 @@ listenRequests((list)=>{
     }
   }
 }
-
-
 
 
 import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -736,6 +777,7 @@ function loadORD(){
 
  
 let pending="";
+let pendingCount = 0;
 let approvedHTML = `
 <table>
 <tr>
@@ -753,6 +795,7 @@ let approvedHTML = `
     list.forEach((r,i)=>{
 
       if(r.status==="PENDING_ORD"){
+  pendingCount++;
         pending += buildCard(r, i, `
           <button onclick="approveORD('${r.id}')">Approve</button>
          <textarea id="rejectReason_${r.id}" placeholder="Reason for rejection"></textarea>
@@ -793,7 +836,21 @@ let approvedHTML = `
 
     });
 
-    ordPending.innerHTML = pending;
+   
+if(pendingCount === 0){
+  ordPending.innerHTML = `
+    <p style="text-align:center; color:gray;">
+      No Pending Request
+    </p>
+  `;
+}else{
+  ordPending.innerHTML = `
+    <h4 style="margin-bottom:10px; color:#b91c1c;">
+      ${pendingCount} Pending Request${pendingCount > 1 ? 's' : ''} for Approval
+    </h4>
+  ` + pending;
+}
+
     approvedHTML += "</table>";
 ordApproved.innerHTML = approvedHTML;
 
@@ -819,38 +876,67 @@ async function approveORD(id){
   }
 }
 
-
 async function loadReview(){
-let list = await getRequests();
-  let html = "";
+  let list = await getRequests();
+
+  let pendingHTML = "";
+  let approvedHTML = `
+  <table>
+    <tr>
+      <th>Date</th>
+      <th>PR No.</th>
+      <th>Division</th>
+      <th>Requestor</th>
+      <th>Purpose</th>
+      <th>Actions</th>
+    </tr>
+  `;
 
   list.forEach((r,i)=>{
 
-    // TECHNICAL (TOS)
+    // ✅ PENDING (TOS)
     if(currentUser.role==="TOS" && r.status==="FOR_TOS_CANVASS"){
-      html += buildCard(r,i,`
+      pendingHTML += buildCard(r,i,`
         <textarea id="remarks${i}" placeholder="Remarks"></textarea>
         <button onclick="approveCanvass(${i})">Approve Canvass</button>
-       <textarea id="rejectReason_${r.id}" placeholder="Reason for rejection"></textarea>
-<button onclick="reject('${r.id}')">Reject</button>
-
+        <textarea id="rejectReason_${r.id}" placeholder="Reason for rejection"></textarea>
+        <button onclick="reject('${r.id}')">Reject</button>
       `);
     }
 
-    // ADMINISTRATIVE (FASS)
+    // ✅ PENDING (FASS)
     if(currentUser.role==="FASS" && r.status==="FOR_FASS_CANVASS"){
-      html += buildCard(r,i,`
+      pendingHTML += buildCard(r,i,`
         <textarea id="remarks${i}" placeholder="Remarks"></textarea>
         <button onclick="approveCanvass(${i})">Approve Canvass</button>
-       
-<textarea id="rejectReason_${r.id}" placeholder="Reason for rejection"></textarea>
-<button onclick="reject('${r.id}')">Reject</button>
+        <textarea id="rejectReason_${r.id}" placeholder="Reason for rejection"></textarea>
+        <button onclick="reject('${r.id}')">Reject</button>
       `);
+    }
+
+    // ✅ APPROVED CANVASS (LEFT SIDE)
+    if(r.status==="APPROVED_CANVASS"){
+      approvedHTML += `
+      <tr>
+        <td>${new Date().toLocaleDateString()}</td>
+        <td>${r.prNo || ""}</td>
+        <td>${r.division || ""}</td>
+        <td>${r.name || ""}</td>
+        <td>${r.purpose || ""}</td>
+        <td>
+          <button onclick="viewRequestById('${r.id}')">View</button>
+          <button onclick="printCanvassById('${r.id}')">Print</button>
+        </td>
+      </tr>
+      `;
     }
 
   });
 
-  reviewList.innerHTML = html;
+  approvedHTML += "</table>";
+
+  reviewPending.innerHTML = pendingHTML;
+  reviewApproved.innerHTML = approvedHTML;
 }
 
 
@@ -1090,10 +1176,6 @@ if(!recordsHTML.includes("<table>")){
 
 
 
-
-
-
-
 });
 
 adminCanvass.innerHTML = canvassHTML;
@@ -1127,7 +1209,6 @@ async function sendTo(i){
   alert("📤 Sent for approval!");
   loadAdmin();
 }
-
 
 
 async function printPR(id){
@@ -1296,7 +1377,6 @@ printWindow.onload = function(){
 
 
 
-
 async function updateORDNotification(){
   let list = await getRequests();
 
@@ -1317,74 +1397,182 @@ async function printCanvass(i){
   let list = await getRequests();
   let r = list[i];
 
-  let rows="";
-  r.items.forEach(it=>{
-    rows+=`
+  // 🔥 Determine approver
+  let approverName = "";
+  let approverTitle = "";
+
+  if(r.type === "TECHNICAL"){
+    approverName = "LAILA A. TAGUINOD";
+    approverTitle = "ARD TOS";
+  } else {
+    approverName = "MARY ANN P. MAGLASIN";
+    approverTitle = "ARD FASS";
+  }
+
+  let rows = "";
+
+  r.items.forEach((it)=>{
+    rows += `
     <tr>
       <td>${it.qty || ''}</td>
       <td>${it.unit || ''}</td>
       <td style="text-align:left;">${it.desc || ''}</td>
-      <td>${it.cost || ''}</td>
-      <td>${(it.qty*it.cost || 0).toFixed(2)}</td>
+      <td></td>
+      <td></td>
     </tr>`;
   });
 
   let html = `
   <html>
   <head>
-  <title>Canvass Form - ${r.prNo}</title>
+  <title>Request for Quotation - ${r.prNo}</title>
+
   <style>
-    body { font-family: Arial, sans-serif; font-size:12px; margin:20px; }
-    h2,h3 { text-align:center; margin:2px; }
-    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    body { font-family: Arial; font-size:12px; margin:30px; }
+
+    .center { text-align:center; }
+    .right { text-align:right; }
+
+    table { width:100%; border-collapse:collapse; }
     th, td { border:1px solid black; padding:5px; text-align:center; }
-    th { background:#f0f0f0; }
+
+    .no-border td { border:none; }
+
     .left { text-align:left; }
-    .signature { margin-top:40px; display:flex; justify-content:space-between; }
-    .sig-block { width:40%; text-align:center; }
-    .sig-line { border-top:1px solid black; margin-top:60px; }
+
+    .header-box {
+      position:absolute;
+      top:30px;
+      right:30px;
+      border:1px solid black;
+      padding:5px;
+      font-size:10px;
+    }
+
+    .sign-area {
+      margin-top:50px;
+      display:flex;
+      justify-content:space-between;
+    }
+
+    .sign-block {
+      width:45%;
+      text-align:center;
+    }
+
+    .line {
+      border-top:1px solid black;
+      margin-top:60px;
+    }
+
   </style>
   </head>
+
   <body>
 
-    <h3>Department of Science and Technology<br>Regional Office No. 02</h3>
-    <h3>Dalan na Paccorofun, Corner Matunung St., Regional Government Center, Carig Sur, Tuguegarao City, Cagayan</h3>
-    <h2>REQUEST FOR QUOTATION</h2>
+  <div class="header-box">
+    FASS-PUR 07-06<br>
+    Rev. 4 | January 2022
+  </div>
 
-    <table>
-      <tr>
-        <td><b>Date:</b> ${new Date().toLocaleDateString()}</td>
-        <td><b>PR No.:</b> ${r.prNo || ''}</td>
-      </tr>
-    </table>
+  <div class="center">
+    Department of Science and Technology<br>
+    Regional Office No. 02<br>
+    Dalan na Paccorofun, Corner Matunung St.<br>
+    Regional Government Center, Carig Sur, Tuguegarao City, Cagayan
+    <h3>REQUEST FOR QUOTATION</h3>
+  </div>
 
-    <p><b>The Manager:</b><br>
-    Kindly quote your lowest price(s) on the following articles/services:</p>
+  <table class="no-border">
+    <tr>
+      <td class="left">
+        Standard Form Title<br><br>
+        ___________________________<br>
+        ___________________________<br>
+        ___________________________
+      </td>
 
-    <table>
-      <tr>
-        <th>QTY</th>
-        <th>UNIT</th>
-        <th class="left">ARTICLES</th>
-        <th>UNIT PRICE</th>
-        <th>TOTAL</th>
-      </tr>
-      ${rows}
-    </table>
+      <td class="right" style="vertical-align:top;">
+  <div>Date: ____________________</div>
+  <div>PR No.: <b>${r.prNo || ''}</b></div>
+</td>
 
-    <div class="signature">
-      <div class="sig-block">
-        APPROVED FOR CANVASS:<br>
-        <div class="sig-line">LAILA A. TAGUINOD</div>
-        ARD FASS / ARD TOS / ARD FOS
-      </div>
+    </tr>
+  </table>
 
-      <div class="sig-block">
-        CANVASSED BY:<br>
-        <div class="sig-line">${r.name || ''}</div>
-        Supply Officer III
-      </div>
+  <br>
+
+  <p><b>The Manager:</b></p>
+
+  <p>
+  Kindly quote to us your lowest price(s) on the following articles/services:
+  </p>
+
+  <p style="font-size:11px;">
+  NOTE:<br>
+  1. ALL ENTRIES MUST BE TYPEWRITTEN<br>
+  2. DELIVERY PERIOD WITHIN ______ CALENDAR DAYS<br>
+  3. WARRANTY SHALL BE FOR A PERIOD OF SIX (6) MONTHS FOR SUPPLIES & MATERIALS, ONE (1) YEAR FOR EQUIPMENT.<br>
+  4. PRICE VALIDITY SHALL BE FOR A PERIOD OF ___ CALENDAR DAYS<br>
+  5. PAYMENT WILL BE CREDITED TO SUPPLIER'S BANK ACCOUNT<br>
+  </p>
+
+  <table>
+    <tr>
+      <th>QTY</th>
+      <th>UNIT</th>
+      <th>ARTICLES</th>
+      <th>UNIT PRICE</th>
+      <th>TOTAL</th>
+    </tr>
+
+    ${rows}
+
+  </table>
+
+  <br><br>
+
+  <p style="text-align:center;">
+    This office desire to place order for the above items with the minimum delay. Your quotation will help very much in placing the order.
+  </p>
+
+  <br><br>
+
+  <div class="sign-area">
+
+    <!-- LEFT SIDE -->
+    <div class="sign-block" style="text-align:left;">
+      <b>IMPORTANT:</b><br>
+      TIN #: ______________________ &nbsp;&nbsp;
+      ☐ VAT &nbsp;&nbsp; ☐ NON VAT
+      <br><br><br>
+      ___________________________<br>
+      Name & Signature of Supplier or Proprietor
     </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="sign-block">
+
+      <div style="text-align:left;">
+        APPROVED FOR CANVASS:
+      </div>
+
+      <div class="line"></div>
+      <b>${approverName}</b><br>
+      ${approverTitle}
+
+      <br><br>
+
+      <div style="text-align:left;">
+        CANVASSED BY:
+      </div>
+
+      <div class="line"></div>
+      <!-- ❗ intentionally blank -->
+
+    </div>
+
+  </div>
 
   </body>
   </html>
@@ -1392,15 +1580,18 @@ async function printCanvass(i){
 
   let w = window.open("", "_blank");
 
-w.document.open();
-w.document.write(html);
-w.document.close();
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
 
-w.onload = function(){
-  w.focus();
-  w.print();
-};
+  w.onload = function(){
+    w.focus();
+    w.print();
+  };
 }
+
+
+
 
 async function createAbstract(i){
   let list = await getRequests();
@@ -1799,85 +1990,22 @@ if(section === "users"){
 
 
 
-
 async function viewRequest(i){
   let list = await getRequests();
   let r = list[i];
 
-  let rows = "";
-  let total = 0;
-
-  r.items.forEach(it=>{
-    let t = (it.qty * it.cost) || 0;
-    total += t;
-
-    rows += `
-      <tr>
-        <td>${it.unit}</td>
-        <td>${it.desc}</td>
-        <td>${it.qty}</td>
-        <td>${it.cost}</td>
-        <td>${t}</td>
-      </tr>
-    `;
-  });
-
-  let html = `
-  <html>
-  <head>
-  <title>View Request</title>
-  <style>
-    body{font-family:Arial;padding:20px;}
-    table{width:100%;border-collapse:collapse;}
-    th,td{border:1px solid #000;padding:5px;text-align:center;}
-    th{background:#eee;}
-  </style>
-  </head>
-  <body>
-
-  <h2>Purchase Request Details</h2>
-
-  <p><b>Name:</b> ${r.name}</p>
-  <p><b>Position:</b> ${r.position}</p>
-<p><b>Division:</b> ${r.division || "-"}</p>
-  <p><b>Type:</b> ${r.type}</p>
-  <p><b>Purpose:</b> ${r.purpose}</p>
-  <p><b>Status:</b> ${r.status}</p>
-<p><b>Reject Reason:</b> ${r.rejectReason || "-"}</p>
-
-  <p><b>PR No:</b> ${r.prNo || "N/A"}</p>
-
-  <table>
-    <tr>
-      <th>Unit</th>
-      <th>Description</th>
-      <th>Qty</th>
-      <th>Cost</th>
-      <th>Total</th>
-    </tr>
-    ${rows}
-  </table>
-
-  <h3>Total: ₱${total}</h3>
-
-  <br>
-  <button onclick="window.print()">🖨 Print</button>
-
-  </body>
-  </html>
-  `;
-
-  let w = window.open("", "_blank");
-
-w.document.open();
-w.document.write(html);
-w.document.close();
-
-w.onload = function(){
-  w.focus();
-  w.print();
-};
+  // 👉 reuse print layout directly
+  printPR(r.id);
 }
+
+
+
+
+
+
+
+
+
 
 async function approveCanvass(i){
   let list = await getRequests();
@@ -2064,32 +2192,12 @@ async function viewRequestById(id){
     return;
   }
 
-  let rows = "";
-  let total = 0;
-
-  r.items.forEach(it=>{
-    let t = (it.qty * it.cost) || 0;
-    total += t;
-
-    rows += `
-      <tr>
-        <td>${it.unit}</td>
-        <td>${it.desc}</td>
-        <td>${it.qty}</td>
-        <td>${it.cost}</td>
-        <td>${t}</td>
-      </tr>
-    `;
-  });
-
-  let w = window.open("", "_blank");
-  w.document.write(`
-    <h2>PR ${r.prNo}</h2>
-    <p>${r.name}</p>
-    <table border="1">${rows}</table>
-    <h3>Total: ₱${total}</h3>
-  `);
+  printPRDirect(r); // 🔥 eto ang bago
 }
+
+
+
+
 
 function printPRDirect(r) {
   if (!r.prNo) {
@@ -2293,8 +2401,35 @@ function printPRDirect(r) {
 
 
 
+
+async function printCanvassById(id){
+  let list = await getRequests();
+  let i = list.findIndex(x => x.id === id);
+
+  if(i === -1){
+    alert("Request not found");
+    return;
+  }
+
+  printCanvass(i); // reuse mo existing function mo 💯
+}
+
+window.printCanvassById = printCanvassById;
+
+
+
+
+
+
+
 window.viewRequestById = viewRequestById;
 window.printPR = printPR;
+window.printPRDirect = printPRDirect;
+
+
+
+
+
 
 </script>
 
