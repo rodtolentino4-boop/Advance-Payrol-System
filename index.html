@@ -14,6 +14,9 @@ header{background:#1e3a5f;color:white;padding:15px;text-align:center;font-size:2
 
 .card{background:white;border-radius:10px;padding:15px;margin-bottom:15px;box-shadow:0 2px 5px rgba(0,0,0,0.1);}
 
+
+
+
 input,textarea,button,select{
 padding:8px;margin:5px;border-radius:5px;border:1px solid #ccc;width:95%;
 }
@@ -63,8 +66,8 @@ table {
 }
 
 td {
-  white-space: normal;        
-  word-break: break-word;    
+  white-space: normal;        /* allow wrap */
+  word-break: break-word;     /* break long words */
 }
 
 #searchRecords {
@@ -97,6 +100,16 @@ td {
   width:100%;
   margin:10px 0;
 }
+
+
+.action-btn {
+  background:#1e3a5f;
+  color:white;
+  font-weight:bold;
+}
+
+
+
 
 </style>
 </head>
@@ -311,11 +324,22 @@ td {
   <div id="userList"></div>
 </div>
 
+
+
+
+
+
+
+
   </div>
 
 </div>
 
 </div>
+
+
+
+
 
 <!-- REVIEW -->
 
@@ -347,6 +371,7 @@ td {
 </div>
 
 </div>
+
 
 </div>
 
@@ -452,6 +477,7 @@ onAuthStateChanged(auth, async (user) => {
 
 // USERS
 
+
 let currentUser=null;
 
 // LOGIN
@@ -478,7 +504,7 @@ window.login = async function(){
     // GET USERS SA FIRESTORE
     let users = await getUsers();
 
-    //  FIX: mas safe match
+    // 🔥 FIX: mas safe match
     let found = users.find(u => 
       u.email && u.email.toLowerCase().trim() === user.email.toLowerCase().trim()
     );
@@ -547,6 +573,8 @@ listenRequests((list)=>{
     }
   }
 }
+
+
 
 
 import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -1166,13 +1194,19 @@ if(!recordsHTML.includes("<table>")){
       <td>${r.name || ""}</td>
       <td>${r.position || ""}</td>
       <td>${r.purpose || ""}</td>
-      <td>
-        <button onclick="viewRequestById('${r.id}')">View</button>
-        <button onclick="printPR('${r.id}')">Print</button>
-      </td>
+     
+<td>
+  <button onclick="printPR('${r.id}')">PRINT PR</button>
+  <button onclick="printCanvassById('${r.id}')">PRINT CANVASS</button>
+</td>
+
     </tr>
   `;
 }
+
+
+
+
 
 
 
@@ -1203,12 +1237,14 @@ async function sendTo(i){
     : "FOR_FASS_CANVASS";
 
   await updateDoc(doc(db, "requests", r.id), {
-    status: newStatus
-  });
+  status: newStatus,
+  canvassSubmittedDate: new Date().toISOString()
+});
 
   alert("📤 Sent for approval!");
   loadAdmin();
 }
+
 
 
 async function printPR(id){
@@ -1377,6 +1413,7 @@ printWindow.onload = function(){
 
 
 
+
 async function updateORDNotification(){
   let list = await getRequests();
 
@@ -1493,7 +1530,14 @@ async function printCanvass(i){
       </td>
 
       <td class="right" style="vertical-align:top;">
-  <div>Date: ____________________</div>
+
+<div>Date: ${
+  r.canvassSubmittedDate
+    ? new Date(r.canvassSubmittedDate).toLocaleDateString()
+    : "____________________"
+}</div>
+
+
   <div>PR No.: <b>${r.prNo || ''}</b></div>
 </td>
 
@@ -1589,6 +1633,10 @@ async function printCanvass(i){
     w.print();
   };
 }
+
+
+
+
 
 
 
@@ -2418,16 +2466,9 @@ window.printCanvassById = printCanvassById;
 
 
 
-
-
-
-
 window.viewRequestById = viewRequestById;
 window.printPR = printPR;
 window.printPRDirect = printPRDirect;
-
-
-
 
 
 
