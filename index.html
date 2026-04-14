@@ -1287,7 +1287,8 @@ async function sendTo(i){
 });
 
   alert("📤 Sent for approval!");
-  loadAdmin();
+ let list = await getRequests();
+loadAdmin(list);
 }
 
 
@@ -2135,11 +2136,9 @@ async function viewRequestById(id){
 
 
 function printPRDirect(r) {
-  if (!r.prNo) {
-    alert("PR Number not assigned yet.");
-    return;
-  }
-
+ if (!r.prNo) {
+  r.prNo = "N/A";
+}
   // Compute total cost and build rows
   let rows = "";
   let total = 0;
