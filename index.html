@@ -55,9 +55,10 @@ th, td {
 .action-btn{
   width:auto;
   display:inline-block;
-  padding:4px 8px;
-  font-size:12px;
+  padding:4px 10px;
+  font-size:11px;
   margin:1px;
+  border-radius:6px;
 }
 
 table {
@@ -108,7 +109,15 @@ td {
   font-weight:bold;
 }
 
+#prModal {
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
 
+#prModal:not(.hidden) {
+  display: flex;
+}
 
 
 </style>
@@ -142,60 +151,34 @@ td {
 <div id="staffPage" class="hidden">
 
 <div class="topbar">
-<h2>STAFF DASHBOARD</h2>
-<button onclick="logout()">Logout</button>
+  <h2>STAFF DASHBOARD</h2>
+
+  <div style="display:flex; gap:5px;">
+    <button class="action-btn" onclick="openChangePass()">Edit Password</button>
+    <button class="action-btn" onclick="logout()">Logout</button>
+  </div>
 </div>
 
 <div class="row">
 
 <!-- LEFT -->
 <div class="col">
+
 <div class="card">
-<h3>📋 My Requests</h3>
-<div id="staffList"></div>
-</div>
-</div>
 
-<!-- RIGHT -->
-<div class="col">
-<div class="card">
-<h3>➕ Create Purchase Request</h3>
-
-<input id="name" placeholder="Name">
-
-<div class="row">
-  <div class="col">
-    <input id="position" placeholder="Position">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h3>📋 My Requests</h3>
+    <button onclick="openPRModal()">+ Create Purchase Request</button>
   </div>
-  <div class="col">
-    <input id="division" placeholder="Division">
-  </div>
+
+  <div id="staffList"></div>
+
 </div>
 
 
-<select id="reqType">
-<option value="TECHNICAL">TECHNICAL</option>
-<option value="ADMINISTRATIVE">ADMINISTRATIVE</option>
-</select>
-
-<div class="row">
-  <div class="col">
-    <textarea id="purpose" placeholder="Purpose"></textarea>
-  </div>
-  <div class="col">
-    <label>📎 Supporting Document</label>
-    <input type="file" id="supportFile">
-  </div>
 </div>
 
-<table id="itemsTable">
-<tr>
-<th>Unit</th><th>Description</th><th>Qty</th><th>Cost</th><th>Total</th>
-</tr>
-</table>
 
-<button onclick="addRow()">Add Item</button>
-<button onclick="submitRequest()">Submit</button>
 
 </div>
 </div>
@@ -674,14 +657,18 @@ if(fileInput.files.length > 0){
   name: nameField.value.trim() || "NO NAME",
   position: positionField.value.trim(),
   division: divisionField.value.trim(),
-username: currentUser.email,
-
-    type:reqType.value,
-    purpose:purpose.value,
-    status:"PENDING_ORD",
+  username: currentUser.email,
+  type:reqType.value,
+  purpose:purpose.value,
+  status:"PENDING_ORD",
   items:[],
-supportFile: fileURL // ✅ tama
-  };
+  supportFile: fileURL,
+
+  // ✅ ADD THIS (ETO LANG KAPALIT)
+  dateRequested: new Date().toISOString()
+
+};
+
 
   document.querySelectorAll("#itemsTable tr").forEach((r,i)=>{
     if(i===0)return;
@@ -700,6 +687,7 @@ supportFile: fileURL // ✅ tama
 document.getElementById("supportFile").value = "";
 
 alert("Submitted!");
+closePRModal();
 loadStaff();
 
 document.getElementById("position").value = "";
@@ -724,13 +712,13 @@ async function loadStaff(){
   let html = `
   <table>
     <tr>
-      <th>PR No.</th>
-      <th>Name</th>
-      <th>Purpose</th>
-     <th>Status</th>
+     <th>Date</th>
+<th>PR No.</th>
+<th>Name</th>
+<th>Purpose</th>
+<th>Status</th>
 <th>Remarks</th>
 <th>Actions</th>
-
     </tr>
   `;
 
@@ -758,10 +746,12 @@ else{
 }
 
 
-    html += `
-    <tr>
-      <td>${r.prNo || "N/A"}</td>
-      <td>${r.name}</td>
+   html += `
+<tr>
+  <td>${r.dateRequested ? new Date(r.dateRequested).toLocaleDateString() : "-"}</td>
+  <td>${r.prNo || "N/A"}</td>
+  <td>${r.name}</td>
+
       <td>${r.purpose}</td>
      <td>${r.status}</td>
 <td>${remarks}</td>
@@ -793,15 +783,24 @@ async function generatePR(){
 
   let now = new Date();
   let year = now.getFullYear();
-  let month = String(now.getMonth()+1).padStart(2,'0');
 
-  let count = list.filter(r => 
-    r.prNo && r.prNo.startsWith(`${year}-${month}`)
-  ).length + 1;
+  // filter lahat ng PR this year lang
+  let yearlyPRs = list.filter(r => 
+    r.prNo && r.prNo.startsWith(`${year}-`)
+  );
 
-return `${year}-${month}-${String(count).padStart(3,'0')}`;
+  let max = 0;
+
+  yearlyPRs.forEach(r => {
+    let parts = r.prNo.split("-");
+    let num = parseInt(parts[1]);
+    if(num > max) max = num;
+  });
+
+  let next = max + 1;
+
+  return `${year}-${String(next).padStart(3,'0')}`;
 }
-
 
 
 
@@ -853,7 +852,19 @@ let approvedHTML = `
 ){
   approvedHTML += `
   <tr>
-    <td>${new Date().toLocaleDateString()}</td>
+   
+<td>
+  ${r.dateRequested 
+    ? new Date(r.dateRequested).toLocaleDateString('en-PH', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit'
+      }) 
+    : "-"
+  }
+</td>
+
+
     <td>${r.prNo || ""}</td>
     <td>${r.division || ""}</td>
     <td>${r.name || ""}</td>
@@ -958,7 +969,18 @@ async function loadReview(){
     if(r.status==="APPROVED_CANVASS"){
       approvedHTML += `
       <tr>
-        <td>${new Date().toLocaleDateString()}</td>
+       <td>
+  ${r.dateRequested 
+    ? new Date(r.dateRequested).toLocaleDateString('en-PH', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit'
+      }) 
+    : "-"
+  }
+</td>
+
+
         <td>${r.prNo || ""}</td>
         <td>${r.division || ""}</td>
         <td>${r.name || ""}</td>
@@ -1200,7 +1222,18 @@ if(!recordsHTML.includes("<table>")){
   // 👉 Rows (append)
   recordsHTML += `
     <tr>
-      <td>${new Date().toLocaleDateString()}</td>
+     <td>
+  ${r.dateRequested 
+    ? new Date(r.dateRequested).toLocaleDateString('en-PH', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit'
+      }) 
+    : "-"
+  }
+</td>
+
+
       <td>${r.prNo || ""}</td>
       <td>${r.division || ""}</td>
       <td>${r.name || ""}</td>
@@ -2014,17 +2047,18 @@ async function deleteUser(i){
 
 function listenRequests(callback){
   onSnapshot(collection(db, "requests"), (snapshot)=>{
-    let list = [];
+    cachedRequests = [];
+
     snapshot.forEach(doc=>{
-      list.push({
+      cachedRequests.push({
         id: doc.id,
         ...doc.data()
       });
     });
-    callback(list);
+
+    callback(cachedRequests);
   });
 }
-
 
 async function getUsers(){
   const querySnapshot = await getDocs(collection(db, "users"));
@@ -2136,8 +2170,9 @@ function printPRDirect(r) {
   });
 
   // The date in the form (from r.date or today fallback)
-  const prDate = r.date || new Date().toISOString().slice(0,10);
-
+  const prDate = r.dateRequested
+  ? new Date(r.dateRequested).toLocaleDateString('en-PH')
+  : new Date().toLocaleDateString('en-PH');
   const html = `
   <html>
   <head>
@@ -2299,10 +2334,6 @@ function printPRDirect(r) {
 
 
 
-
-
-
-
 async function printCanvassById(id){
   let list = await getRequests();
   let i = list.findIndex(x => x.id === id);
@@ -2314,6 +2345,75 @@ async function printCanvassById(id){
 
   printCanvass(i); // reuse mo existing function mo 💯
 }
+
+
+window.openPRModal = function(){
+  document.getElementById("prModal").classList.remove("hidden");
+
+  // auto init table kapag open
+  itemsTable.innerHTML = `
+    <tr>
+      <th>Unit</th><th>Description</th><th>Qty</th><th>Cost</th><th>Total</th>
+    </tr>`;
+  initTable();
+
+  // autofill name
+  document.getElementById("name").value = currentUser.fullName || "";
+}
+
+window.closePRModal = function(){
+  document.getElementById("prModal").classList.add("hidden");
+}
+
+
+
+import { updatePassword } 
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+window.openChangePass = function(){
+  document.getElementById("changePassModal").classList.remove("hidden");
+}
+
+window.closeChangePass = function(){
+  document.getElementById("changePassModal").classList.add("hidden");
+}
+
+window.changePassword = async function(){
+  try{
+    let pass1 = document.getElementById("newPass").value;
+    let pass2 = document.getElementById("confirmPass").value;
+
+    if(!pass1 || !pass2){
+      alert("Complete fields");
+      return;
+    }
+
+    if(pass1 !== pass2){
+      alert("Passwords do not match");
+      return;
+    }
+
+    let user = auth.currentUser;
+
+    await updatePassword(user, pass1);
+
+    alert("✅ Password updated!");
+    closeChangePass();
+
+  }catch(err){
+    console.error(err);
+
+    if(err.code === "auth/requires-recent-login"){
+      alert("⚠️ Please logout and login again before changing password.");
+    } else {
+      alert(err.message);
+    }
+  }
+}
+
+
+
+
 
 window.printCanvassById = printCanvassById;
 
@@ -2345,6 +2445,101 @@ window.printPRDirect = printPRDirect;
   <button onclick="generateAbstract()">Generate & Print</button>
   <button onclick="closeAbstract()">Close</button>
 </div>
+
+
+<!-- PR MODAL -->
+
+
+
+<div id="prModal" class="hidden" style="
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:rgba(0,0,0,0.5);
+  justify-content:center;
+  align-items:center;
+  z-index:1000;
+">
+  <div style="
+    background:white;
+    width:80%;
+    max-height:90%;
+    overflow:auto;
+    padding:20px;
+    border-radius:10px;
+  ">
+
+    <h3>➕ Create Purchase Request</h3>
+
+    <input id="name" placeholder="Name">
+
+    <div class="row">
+      <div class="col">
+        <input id="position" placeholder="Position">
+      </div>
+      <div class="col">
+        <input id="division" placeholder="Division">
+      </div>
+    </div>
+
+    <select id="reqType">
+      <option value="TECHNICAL">TECHNICAL</option>
+      <option value="ADMINISTRATIVE">ADMINISTRATIVE</option>
+    </select>
+
+    <div class="row">
+      <div class="col">
+        <textarea id="purpose" placeholder="Purpose"></textarea>
+      </div>
+      <div class="col">
+        <label>📎 Supporting Document</label>
+        <input type="file" id="supportFile">
+      </div>
+    </div>
+
+    <table id="itemsTable">
+      <tr>
+        <th>Unit</th><th>Description</th><th>Qty</th><th>Cost</th><th>Total</th>
+      </tr>
+    </table>
+
+    <button onclick="addRow()">Add Item</button>
+    <button onclick="submitRequest()">Submit</button>
+    <button onclick="closePRModal()">Cancel</button>
+
+  </div>
+</div>
+
+
+<div id="changePassModal" class="hidden" style="
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:rgba(0,0,0,0.5);
+  justify-content:center;
+  align-items:center;
+  z-index:1000;
+">
+
+  <div style="
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    width:300px;
+  ">
+    <h3>🔑 Change Password</h3>
+
+    <input type="password" id="newPass" placeholder="New Password">
+    <input type="password" id="confirmPass" placeholder="Confirm Password">
+
+    <button onclick="changePassword()">Save</button>
+    <button onclick="closeChangePass()">Cancel</button>
+  </div>
+</div>
+
+
+
+
 
 </body>
 </html>
