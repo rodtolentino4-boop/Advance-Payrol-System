@@ -801,8 +801,7 @@ else{
 <td style="white-space:nowrap;">
 
   ${r.status !== "CANCELLED" ? `
-    <button class="action-btn btn-view" onclick="viewRequest(${i})">👁 View</button>
-<button class="action-btn btn-print" onclick="printPR('${r.id}')">🖨 Print</button>
+   <button class="action-btn btn-print" onclick="printPR('${r.id}')">🖨 Print</button>
   ` : ''}
 
   ${r.status === "PENDING_ORD" 
@@ -2622,8 +2621,6 @@ window.cancelRequest = cancelRequest;
     <button onclick="closeChangePass()">Cancel</button>
   </div>
 </div>
-
-
 
 
 
