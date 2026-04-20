@@ -2314,9 +2314,7 @@ body {
     page-break-inside: avoid;
   }
 
-  thead {
-    display: table-header-group;
-  }
+ 
 
 }
 
@@ -2527,22 +2525,18 @@ table {
     margin: 0;
   }
 
-  .print-page {
-    border: 2px solid black;
-    padding: 10px;
-    box-sizing: border-box;
+ .print-page {
+  border: 2px solid black;
+  padding: 10px;
+  box-sizing: border-box;
 
-       min-height: 100%;
+  display: block; /* 🔥 IMPORTANT */
+  min-height: auto; /* 🔥 FIX BLANK PAGE */
+}
 
-      page-break-after: auto; /* 👈 FIX */
 
-    display: flex;
-    flex-direction: column;
-  }
 
-  .content {
-    flex: 1;
-  }
+ 
 
   table {
     width: 100%;
@@ -2555,9 +2549,13 @@ table {
 
 }
 
+.print-header div {
+  line-height: 1.2;
+}
 
-
-
+.print-header h2 {
+  margin-top: 8px;
+}
 
 
 
