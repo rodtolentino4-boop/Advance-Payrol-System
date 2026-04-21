@@ -1,128 +1,209 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Interview Timer</title>
+<title>Interview Timer Pro</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
-    body {
-        margin: 0;
-        font-family: 'Segoe UI', sans-serif;
-        background: linear-gradient(135deg, #1e3c72, #2a5298);
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: white;
-        flex-direction: column;
-    }
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+   background: radial-gradient(circle at top, #0b1f3a, #123a63, #1f5a8a);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
 
-    /* HEADER */
-    .header {
-        position: absolute;
-        top: 15px;
-        text-align: center;
-        width: 100%;
-        font-size: 16px;
-        font-weight: bold;
-        letter-spacing: 1px;
-        line-height: 1.4;
-    }
+/* HEADER */
+.header {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    padding: 15px 0;
+    text-align: center;
+    backdrop-filter: blur(12px);
+    background: rgba(10, 35, 70, 0.6);
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
 
-    .container {
-        text-align: center;
-        backdrop-filter: blur(15px);
-        background: rgba(255, 255, 255, 0.1);
-        padding: 40px;
-        border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-    }
+.main {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    letter-spacing: 2px;
+}
 
-    h1 {
-        margin-bottom: 10px;
-        font-weight: 500;
-    }
+.sub {
+    font-size: 13px;
+    opacity: 0.85;
+    letter-spacing: 1px;
+}
 
-    #timer {
-        font-size: 80px;
-        margin: 20px 0;
-        font-weight: bold;
-        text-shadow: 0 0 20px rgba(255,255,255,0.7);
-    }
+.sub2 {
+    font-size: 12px;
+    opacity: 0.6;
+}
 
-    button {
-        padding: 12px 25px;
-        font-size: 16px;
-        margin: 10px;
-        border: none;
-        border-radius: 30px;
-        cursor: pointer;
-        transition: 0.3s;
-    }
+/* FOOTER */
+.footer {
+    position: absolute;
+    bottom: 15px;
+    width: 100%;
+    text-align: center;
+    font-size: 13px;
+    opacity: 0.7;
+    letter-spacing: 1px;
+}
 
-    button:hover {
-        transform: scale(1.1);
-    }
+/* MAIN CARD */
+.container {
+    text-align: center;
+    backdrop-filter: blur(25px);
+    background: rgba(255,255,255,0.08);
+    padding: 50px;
+    border-radius: 25px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    width: 380px;
+}
 
-    .start {
-        background: #00c853;
-        color: white;
-    }
+/* TITLE */
+h1 {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
 
-    .stop {
-        background: #ffab00;
-        color: black;
-    }
+/* POSITION */
+.position {
+    font-size: 14px;
+    opacity: 0.75;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+}
 
-    .extend {
-        background: #2979ff;
-        color: white;
-        display: none;
-    }
+/* TIMER */
+#timer {
+    font-size: 90px;
+    font-weight: 700;
+    margin: 20px 0;
+    letter-spacing: 3px;
+    text-shadow: 0 0 25px rgba(255,255,255,0.6);
+    transition: 0.3s;
+}
 
-    .reset {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: #d50000;
-        color: white;
-        border-radius: 20px;
-    }
+/* BUTTONS */
+button {
+    padding: 12px 22px;
+    font-size: 14px;
+    margin: 8px;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
 
-    #message {
-        font-size: 35px;
-        margin-top: 20px;
-        color: #ff5252;
-        animation: blink 1s infinite;
-    }
+button:hover {
+    transform: translateY(-2px);
+}
 
-    @keyframes blink {
-        0% {opacity: 1;}
-        50% {opacity: 0.3;}
-        100% {opacity: 1;}
-    }
+/* COLORS */
+.start {
+    background: linear-gradient(135deg, #00c853, #69f0ae);
+    color: black;
+}
+
+.stop {
+    background: linear-gradient(135deg, #ffab00, #ffd740);
+    color: black;
+}
+
+.extend {
+    background: linear-gradient(135deg, #2979ff, #82b1ff);
+    color: white;
+    display: none;
+}
+
+.reset {
+    position: absolute;
+    top: 70px;
+    right: 20px;
+    background: rgba(255,255,255,0.15);
+    color: white;
+}
+
+/* MESSAGE */
+#message {
+    font-size: 28px;
+    margin-top: 20px;
+    color: #ff5252;
+    animation: pulse 1s infinite;
+}
+
+/* ANIMATIONS */
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.6; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* LOW TIME WARNING */
+.warning {
+    color: #ff3d00 !important;
+    text-shadow: 0 0 20px red !important;
+}
+
+/* 🌈 RAINBOW PAUSE EFFECT */
+@keyframes rainbow {
+    0% { color: #ff5252; }
+    20% { color: #ffea00; }
+    40% { color: #00e676; }
+    60% { color: #00b0ff; }
+    80% { color: #7c4dff; }
+    100% { color: #ff4081; }
+}
+
+.paused {
+    animation: rainbow 2s infinite;
+}
 </style>
 </head>
 
 <body>
 
+<!-- HEADER -->
 <div class="header">
-    DEPARTMENT OF SCIENCE AND TECHNOLOGY<br>
-    REGIONAL OFFICE NO. 02 - CAGAYAN VALLEY
+    <div class="main">DEPARTMENT OF SCIENCE AND TECHNOLOGY</div>
+    <div class="sub">REGIONAL OFFICE NO. 02</div>
+    <div class="sub2">CARIG SUR, TUGUEGARAO CITY, CAGAYAN</div>
 </div>
 
 <button class="reset" onclick="resetTimer()">Reset</button>
 
+<!-- MAIN -->
 <div class="container">
     <h1>Interview Timer</h1>
+    <div class="position">ADMINISTRATIVE OFFICER V</div>
+
     <div id="timer">15:00</div>
 
     <button class="start" onclick="startTimer()">Start</button>
-    <button class="stop" onclick="stopTimer()">Stop</button>
+    <button class="stop" onclick="stopTimer()">Pause</button>
     <br>
+
+    <!-- EXTEND BUTTONS -->
     <button class="extend" id="extendBtn" onclick="extendTime()">+1 Minute</button>
+    <button class="extend" id="extend3Btn" onclick="extendTime3()">+3 Minutes</button>
 
     <div id="message"></div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+    Prepared by: <strong>DOST02 HRM-PSB SECRETARIAT</strong>
 </div>
 
 <script>
@@ -134,11 +215,20 @@ function updateDisplay() {
     let seconds = timeLeft % 60;
     seconds = seconds < 10 ? "0" + seconds : seconds;
 
-    document.getElementById("timer").innerText = minutes + ":" + seconds;
+    const timerDisplay = document.getElementById("timer");
+    timerDisplay.innerText = minutes + ":" + seconds;
+
+    if (timeLeft <= 60) {
+        timerDisplay.classList.add("warning");
+    } else {
+        timerDisplay.classList.remove("warning");
+    }
 }
 
 function startTimer() {
     if (timer !== null) return;
+
+    document.getElementById("timer").classList.remove("paused");
 
     timer = setInterval(() => {
         if (timeLeft > 0) {
@@ -150,6 +240,7 @@ function startTimer() {
 
             document.getElementById("message").innerText = "⏰ TIME'S UP!";
             document.getElementById("extendBtn").style.display = "inline-block";
+            document.getElementById("extend3Btn").style.display = "inline-block";
         }
     }, 1000);
 }
@@ -157,10 +248,12 @@ function startTimer() {
 function stopTimer() {
     clearInterval(timer);
     timer = null;
+
+    document.getElementById("timer").classList.add("paused");
 }
 
 function resetTimer() {
-    if (!confirm("Sigurado ka gusto mong i-reset?")) return;
+    if (!confirm("Reset the timer?")) return;
 
     clearInterval(timer);
     timer = null;
@@ -168,6 +261,8 @@ function resetTimer() {
 
     document.getElementById("message").innerText = "";
     document.getElementById("extendBtn").style.display = "none";
+    document.getElementById("extend3Btn").style.display = "none";
+    document.getElementById("timer").classList.remove("paused");
 
     updateDisplay();
 }
@@ -176,6 +271,16 @@ function extendTime() {
     timeLeft += 60;
     document.getElementById("message").innerText = "";
     document.getElementById("extendBtn").style.display = "none";
+    document.getElementById("extend3Btn").style.display = "none";
+
+    startTimer();
+}
+
+function extendTime3() {
+    timeLeft += 180;
+    document.getElementById("message").innerText = "";
+    document.getElementById("extendBtn").style.display = "none";
+    document.getElementById("extend3Btn").style.display = "none";
 
     startTimer();
 }
