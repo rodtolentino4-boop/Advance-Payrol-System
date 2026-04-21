@@ -1,1 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Interview Timer</title>
 
+<style>
+    body {
+        margin: 0;
+        font-family: 'Segoe UI', sans-serif;
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        flex-direction: column;
+    }
+
+    /* HEADER */
+    .header {
+        position: absolute;
+        top: 15px;
+        text-align: center;
+        width: 100%;
+        font-size: 16px;
+        font-weight: bold;
+        letter-spacing: 1px;
+        line-height: 1.4;
+    }
+
+    .container {
+        text-align: center;
+        backdrop-filter: blur(15px);
+        background: rgba(255, 255, 255, 0.1);
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+        margin-bottom: 10px;
+        font-weight: 500;
+    }
+
+    #timer {
+        font-size: 80px;
+        margin: 20px 0;
+        font-weight: bold;
+        text-shadow: 0 0 20px rgba(255,255,255,0.7);
+    }
+
+    button {
+        padding: 12px 25px;
+        font-size: 16px;
+        margin: 10px;
+        border: none;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    button:hover {
+        transform: scale(1.1);
+    }
+
+    .start {
+        background: #00c853;
+        color: white;
+    }
+
+    .stop {
+        background: #ffab00;
+        color: black;
+    }
+
+    .extend {
+        background: #2979ff;
+        color: white;
+        display: none;
+    }
+
+    .reset {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: #d50000;
+        color: white;
+        border-radius: 20px;
+    }
+
+    #message {
+        font-size: 35px;
+        margin-top: 20px;
+        color: #ff5252;
+        animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+        0% {opacity: 1;}
+        50% {opacity: 0.3;}
+        100% {opacity: 1;}
+    }
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    DEPARTMENT OF SCIENCE AND TECHNOLOGY<br>
+    REGIONAL OFFICE NO. 02 - CAGAYAN VALLEY
+</div>
+
+<button class="reset" onclick="resetTimer()">Reset</button>
+
+<div class="container">
+    <h1>Interview Timer</h1>
+    <div id="timer">15:00</div>
+
+    <button class="start" onclick="startTimer()">Start</button>
+    <button class="stop" onclick="stopTimer()">Stop</button>
+    <br>
+    <button class="extend" id="extendBtn" onclick="extendTime()">+1 Minute</button>
+
+    <div id="message"></div>
+</div>
+
+<script>
+let timeLeft = 900;
+let timer = null;
+
+function updateDisplay() {
+    let minutes = Math.floor(timeLeft / 60);
+    let seconds = timeLeft % 60;
+    seconds = seconds < 10 ? "0" + seconds : seconds;
+
+    document.getElementById("timer").innerText = minutes + ":" + seconds;
+}
+
+function startTimer() {
+    if (timer !== null) return;
+
+    timer = setInterval(() => {
+        if (timeLeft > 0) {
+            timeLeft--;
+            updateDisplay();
+        } else {
+            clearInterval(timer);
+            timer = null;
+
+            document.getElementById("message").innerText = "⏰ TIME'S UP!";
+            document.getElementById("extendBtn").style.display = "inline-block";
+        }
+    }, 1000);
+}
+
+function stopTimer() {
+    clearInterval(timer);
+    timer = null;
+}
+
+function resetTimer() {
+    if (!confirm("Sigurado ka gusto mong i-reset?")) return;
+
+    clearInterval(timer);
+    timer = null;
+    timeLeft = 900;
+
+    document.getElementById("message").innerText = "";
+    document.getElementById("extendBtn").style.display = "none";
+
+    updateDisplay();
+}
+
+function extendTime() {
+    timeLeft += 60;
+    document.getElementById("message").innerText = "";
+    document.getElementById("extendBtn").style.display = "none";
+
+    startTimer();
+}
+
+updateDisplay();
+</script>
+
+</body>
+</html>
