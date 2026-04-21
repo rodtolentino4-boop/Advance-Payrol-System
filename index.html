@@ -1,292 +1,80 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Interview Timer Pro</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
-
-<style>
-body {
-    margin: 0;
-    font-family: 'Poppins', sans-serif;
-   background: radial-gradient(circle at top, #0b1f3a, #123a63, #1f5a8a);
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-}
-
-/* HEADER */
-.header {
-    position: absolute;
-    top: 0;
-    width: 100%;
-    padding: 15px 0;
-    text-align: center;
-    backdrop-filter: blur(12px);
-    background: rgba(10, 35, 70, 0.6);
-    border-bottom: 1px solid rgba(255,255,255,0.2);
-}
-
-.main {
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 600;
-    letter-spacing: 2px;
-}
-
-.sub {
-    font-size: 13px;
-    opacity: 0.85;
-    letter-spacing: 1px;
-}
-
-.sub2 {
-    font-size: 12px;
-    opacity: 0.6;
-}
-
-/* FOOTER */
-.footer {
-    position: absolute;
-    bottom: 15px;
-    width: 100%;
-    text-align: center;
-    font-size: 13px;
-    opacity: 0.7;
-    letter-spacing: 1px;
-}
-
-/* MAIN CARD */
-.container {
-    text-align: center;
-    backdrop-filter: blur(25px);
-    background: rgba(255,255,255,0.08);
-    padding: 50px;
-    border-radius: 25px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    width: 380px;
-}
-
-/* TITLE */
-h1 {
-    font-weight: 600;
-    margin-bottom: 5px;
-}
-
-/* POSITION */
-.position {
-    font-size: 14px;
-    opacity: 0.75;
-    letter-spacing: 1px;
-    margin-bottom: 15px;
-}
-
-/* TIMER */
-#timer {
-    font-size: 90px;
-    font-weight: 700;
-    margin: 20px 0;
-    letter-spacing: 3px;
-    text-shadow: 0 0 25px rgba(255,255,255,0.6);
-    transition: 0.3s;
-}
-
-/* BUTTONS */
-button {
-    padding: 12px 22px;
-    font-size: 14px;
-    margin: 8px;
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 500;
-}
-
-button:hover {
-    transform: translateY(-2px);
-}
-
-/* COLORS */
-.start {
-    background: linear-gradient(135deg, #00c853, #69f0ae);
-    color: black;
-}
-
-.stop {
-    background: linear-gradient(135deg, #ffab00, #ffd740);
-    color: black;
-}
-
-.extend {
-    background: linear-gradient(135deg, #2979ff, #82b1ff);
-    color: white;
-    display: none;
-}
-
-.reset {
-    position: absolute;
-    top: 70px;
-    right: 20px;
-    background: rgba(255,255,255,0.15);
-    color: white;
-}
-
-/* MESSAGE */
-#message {
-    font-size: 28px;
-    margin-top: 20px;
-    color: #ff5252;
-    animation: pulse 1s infinite;
-}
-
-/* ANIMATIONS */
-@keyframes pulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.05); opacity: 0.6; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-/* LOW TIME WARNING */
-.warning {
-    color: #ff3d00 !important;
-    text-shadow: 0 0 20px red !important;
-}
-
-/* 🌈 RAINBOW PAUSE EFFECT */
-@keyframes rainbow {
-    0% { color: #ff5252; }
-    20% { color: #ffea00; }
-    40% { color: #00e676; }
-    60% { color: #00b0ff; }
-    80% { color: #7c4dff; }
-    100% { color: #ff4081; }
-}
-
-.paused {
-    animation: rainbow 2s infinite;
-}
-</style>
-</head>
-
-<body>
-
-<!-- HEADER -->
-<div class="header">
-    <div class="main">DEPARTMENT OF SCIENCE AND TECHNOLOGY</div>
-    <div class="sub">REGIONAL OFFICE NO. 02</div>
-    <div class="sub2">CARIG SUR, TUGUEGARAO CITY, CAGAYAN</div>
-</div>
-
-<button class="reset" onclick="resetTimer()">Reset</button>
-
-<!-- MAIN -->
-<div class="container">
-    <h1>Interview Timer</h1>
-    <div class="position">ADMINISTRATIVE OFFICER V</div>
-
-    <div id="timer">15:00</div>
-
-    <button class="start" onclick="startTimer()">Start</button>
-    <button class="stop" onclick="stopTimer()">Pause</button>
-    <br>
-
-    <!-- EXTEND BUTTONS -->
-    <button class="extend" id="extendBtn" onclick="extendTime()">+1 Minute</button>
-    <button class="extend" id="extend3Btn" onclick="extendTime3()">+3 Minutes</button>
-
-    <div id="message"></div>
-</div>
-
-<!-- FOOTER -->
-<div class="footer">
-    Prepared by: <strong>DOST02 HRM-PSB SECRETARIAT</strong>
-</div>
-
-<script>
-let timeLeft = 900;
-let timer = null;
-
-function updateDisplay() {
-    let minutes = Math.floor(timeLeft / 60);
-    let seconds = timeLeft % 60;
-    seconds = seconds < 10 ? "0" + seconds : seconds;
-
-    const timerDisplay = document.getElementById("timer");
-    timerDisplay.innerText = minutes + ":" + seconds;
-
-    if (timeLeft <= 60) {
-        timerDisplay.classList.add("warning");
-    } else {
-        timerDisplay.classList.remove("warning");
-    }
-}
-
-function startTimer() {
-    if (timer !== null) return;
-
-    document.getElementById("timer").classList.remove("paused");
-
-    timer = setInterval(() => {
-        if (timeLeft > 0) {
-            timeLeft--;
-            updateDisplay();
-        } else {
-            clearInterval(timer);
-            timer = null;
-
-            document.getElementById("message").innerText = "⏰ TIME'S UP!";
-            document.getElementById("extendBtn").style.display = "inline-block";
-            document.getElementById("extend3Btn").style.display = "inline-block";
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
         }
-    }, 1000);
-}
 
-function stopTimer() {
-    clearInterval(timer);
-    timer = null;
+        body {
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
 
-    document.getElementById("timer").classList.add("paused");
-}
+        .container {
+            text-align: center;
+            padding: 40px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 500px;
+        }
 
-function resetTimer() {
-    if (!confirm("Reset the timer?")) return;
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
 
-    clearInterval(timer);
-    timer = null;
-    timeLeft = 900;
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+            opacity: 0.9;
+        }
 
-    document.getElementById("message").innerText = "";
-    document.getElementById("extendBtn").style.display = "none";
-    document.getElementById("extend3Btn").style.display = "none";
-    document.getElementById("timer").classList.remove("paused");
+        .loader {
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            margin: 0 auto;
+            animation: spin 1s linear infinite;
+        }
 
-    updateDisplay();
-}
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
-function extendTime() {
-    timeLeft += 60;
-    document.getElementById("message").innerText = "";
-    document.getElementById("extendBtn").style.display = "none";
-    document.getElementById("extend3Btn").style.display = "none";
+        .footer {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚧 Under Maintenance</h1>
+        <p>We're currently improving our system.<br>Please check back later.</p>
+        
+        <div class="loader"></div>
 
-    startTimer();
-}
-
-function extendTime3() {
-    timeLeft += 180;
-    document.getElementById("message").innerText = "";
-    document.getElementById("extendBtn").style.display = "none";
-    document.getElementById("extend3Btn").style.display = "none";
-
-    startTimer();
-}
-
-updateDisplay();
-</script>
-
+        <div class="footer">
+            © 2026 Your Website
+        </div>
+    </div>
 </body>
 </html>
