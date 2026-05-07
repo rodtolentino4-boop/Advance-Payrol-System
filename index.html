@@ -425,6 +425,32 @@ th.bidder-col::after {
 
 
 
+}@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  td.winner {
+    background: #00ff88 !important;
+    color: black !important;
+    font-weight: bold;
+  }
+}
+
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  td {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
 
 
 </style>
@@ -1550,7 +1576,19 @@ return `
 }</p>
 
 <p><b>Status:</b> ${r.status}</p>
-
+${r.poCreated ? `
+  <div style="
+    background:#d1fae5;
+    color:#065f46;
+    padding:5px;
+    border-radius:5px;
+    margin-top:5px;
+    font-weight:bold;
+    width:fit-content;
+  ">
+    ✅ PO CREATED
+  </div>
+` : ""}
 
 <p><b>Remarks:</b> ${r.remarks || "-"}</p>
 
@@ -1795,9 +1833,18 @@ if(
     <td>${r.purpose || ""}</td>
 
     <td>
-      <button onclick="openPOModal('${r.id}')">
-        🧾 Create PO
-      </button>
+
+    ${r.poCreated ? `
+  <button onclick="openPOModal('${r.id}')">
+    🔄 Regenerate PO
+  </button>
+` : `
+  <button onclick="openPOModal('${r.id}')">
+    Create PO
+  </button>
+`}
+
+
     </td>
   </tr>
   `;
@@ -2173,13 +2220,18 @@ async function createPO(id){
   let datalist = document.getElementById("supplierList");
   datalist.innerHTML = "";
 
-  r.bidders.forEach(b => {
-    if(!b || !b.trim()) return;
+ 
+(r.bidders || []).forEach((b, i) => {
+  if (!b) return;
 
-    let opt = document.createElement("option");
-    opt.value = b.trim();
-    datalist.appendChild(opt);
-  });
+  let opt = document.createElement("option");
+  opt.value = b;
+  opt.textContent = `Bidder ${i + 1} - ${b}`;
+  datalist.appendChild(opt);
+});
+
+
+
 
   // auto-select first supplier
   document.getElementById("poSupplier").value = r.bidders[0];
@@ -2267,12 +2319,22 @@ async function generateAbstract(){
   let list = await getRequests();
 let r = list.find(x => x.id === window.currentAbstractId);
 
-  let bidders = [b1.value, b2.value, b3.value, b4.value];
 
-  if(bidders.some(b=>!b)){
-    alert("Complete bidders");
-    return;
-  }
+// 🔥 GET ALL BIDDERS
+let bidders = [
+  document.getElementById("b1").value.trim() || "",
+  document.getElementById("b2").value.trim() || "",
+  document.getElementById("b3").value.trim() || "",
+  document.getElementById("b4").value.trim() || ""
+];
+
+// 🔥 VALIDATION
+if(bidders.length === 0){
+  alert("Complete bidders");
+  return;
+}
+
+
 
   let rows = "";
   let totals = [0,0,0,0];
@@ -2295,8 +2357,13 @@ r.items.forEach((it,idx)=>{
 
   let nums = raw.map(extractNumber);
 
-  let min = Math.min(...nums.filter(n=>n>0));
-  let winnerIndex = nums.indexOf(min);
+  let validNums = nums
+  .map((n, i) => ({ n, i }))
+  .filter(x => x.n > 0);
+
+let minObj = validNums.reduce((a, b) => (a.n < b.n ? a : b));
+
+let winnerIndex = minObj.i;
 
   nums.forEach((n,i)=> totals[i]+=n);
 
@@ -2306,11 +2373,16 @@ r.items.forEach((it,idx)=>{
     <td>${it.qty}</td>
     <td>${it.unit}</td>
 
-  ${raw.map((val,i)=>`
+ 
+${raw.map((val,i)=>`
   <td class="${i===winnerIndex?'winner':''}">
     ${val || ''}
   </td>
 `).join("")}
+
+
+
+
 
 
   </tr>
@@ -2326,8 +2398,9 @@ if(rows === ""){
 
 
 
-  let lowestTotal = Math.min(...totals.filter(t=>t>0));
-  let overallWinner = bidders[totals.indexOf(lowestTotal)];
+  let minTotal = Math.min(...totals);
+let overallWinnerIndex = totals.indexOf(minTotal);
+let overallWinner = bidders[overallWinnerIndex];
 
   let html = `
   <html>
@@ -3791,43 +3864,44 @@ window.openPOModal = async function(id){
   let r = list.find(x => x.id === id);
 
 
+
+
+// 🔥 LOAD ALL BIDDERS TO DROPDOWN
 let datalist = document.getElementById("supplierList");
 datalist.innerHTML = "";
 
+(r.bidders || []).forEach((b) => {
 
+  // 🔥 safe convert to string
+  b = String(b || "").trim();
 
-
-
-(r.bidders || []).forEach(b => {
-  if(!b || !b.trim()) return;
-
-  let opt = document.createElement("option");
-  opt.value = b.trim();
-  datalist.appendChild(opt);
-});
-
-if(r.bidders && r.bidders.length > 0){
-  document.getElementById("poSupplier").value = r.bidders[0];
-  loadPOItems(r);
-}
-
-
-
-
-
-
- (r.bidders || []).forEach(b => {
-  if(!b || !b.trim()) return;
+  if(!b) return;
 
   let opt = document.createElement("option");
-  opt.value = b.trim();
+  opt.value = b;
+
   datalist.appendChild(opt);
+console.log("Bidder Loaded:", b);
 });
 
-// 🔥 optional auto-select first supplier
-if(r.bidders && r.bidders.length > 0){
-  document.getElementById("poSupplier").value = r.bidders[0];
-}
+// 🔥 AUTO SELECT FIRST BIDDER
+window.currentPO = r;
+window.currentPOIndex = list.findIndex(x => x.id === id);
+
+document.getElementById("poSupplier").value = "";
+
+loadPOItems(r);
+
+
+
+
+
+
+
+
+
+
+
 
 
   if(!r){
@@ -3867,11 +3941,13 @@ document.getElementById("poNo").innerText = "PO-" + Date.now();
 
 }
 
-document.getElementById("poSupplier").onchange = async function () {
-  let list = await getRequests();
-  let r = list[window.currentPOIndex];
-  loadPOItems(r);
-};
+
+document.getElementById("poSupplier").addEventListener("input", function () {
+
+  if (!window.currentPO) return;
+
+  loadPOItems(window.currentPO);
+});
 
 
 window.closePOModal = function(){
@@ -4149,7 +4225,14 @@ if(supplierIndex === -1){
     poSupplier: supplier,
     poAddress: address,
     poTotal: totalAmount,
-    status: "PO_GENERATED"
+   
+status: "PO_CREATED",
+poCreated: true,
+note: "PO CREATED",
+
+poGeneratedAt: new Date().toISOString()
+
+
   });
 
   alert("✅ PO Generated & Printed Successfully!");
@@ -4159,53 +4242,6 @@ if(supplierIndex === -1){
 
 
 
-function loadPOItems(r) {
-
-  let supplier = document.getElementById("poSupplier").value.trim();
-
-  let idx = (r.bidders || []).findIndex(
-    b => b.trim().toLowerCase() === supplier.toLowerCase()
-  );
-
-  if (idx === -1) {
-    console.warn("Supplier not matched");
-    return;
-  }
-
-  let table = document.getElementById("poItems");
-
-  table.innerHTML = `
-    <tr>
-      <th>Unit</th>
-      <th>Description</th>
-      <th>Qty</th>
-      <th>Unit Cost</th>
-      <th>Amount</th>
-    </tr>
-  `;
-
-  let total = 0;
-
-  (r.abstractItems || []).forEach(it => {
-
-    let price = parseFloat(it.prices?.[idx]) || 0;
-    let amount = price * it.qty;
-
-    total += amount;
-
-    table.innerHTML += `
-      <tr>
-        <td>${it.unit}</td>
-        <td>${it.desc}</td>
-        <td>${it.qty}</td>
-        <td>${price.toLocaleString()}</td>
-        <td>${amount.toLocaleString()}</td>
-      </tr>
-    `;
-  });
-
-  document.getElementById("poTotal").innerText = total.toLocaleString();
-}
 
 
 function loadSuppliers() {
@@ -4431,7 +4467,81 @@ async function openAbstractById(id){
   document.getElementById("abstractModal").classList.remove("hidden");
 }
 
+function loadPOItems(r) {
 
+  let supplier = document.getElementById("poSupplier").value.trim();
+
+  let bidderIndex = (r.bidders || []).findIndex(
+    b => String(b || "").trim().toLowerCase() === supplier.toLowerCase()
+  );
+
+  if (bidderIndex === -1) return;
+
+  let table = document.getElementById("poItems");
+
+  table.innerHTML = `
+    <tr>
+      <th>Unit</th>
+      <th>Description</th>
+      <th>Qty</th>
+      <th>Unit Cost</th>
+      <th>Amount</th>
+    </tr>
+  `;
+
+  let total = 0;
+
+  (r.abstractItems || r.items || []).forEach(it => {
+
+    let rawPrice = it.prices?.[bidderIndex] || 0;
+
+    let price = Number(
+      String(rawPrice)
+        .replace(/,/g, "")
+        .replace(/[^\d.-]/g, "")
+    ) || 0;
+
+    let qty = parseFloat(it.qty || 0);
+    let amount = price * qty;
+
+    total += amount;
+
+    table.innerHTML += `
+      <tr>
+        <td>${it.unit || ''}</td>
+        <td>${it.desc || ''}</td>
+        <td>${qty}</td>
+        <td>₱${price.toLocaleString()}</td>
+        <td>₱${amount.toLocaleString()}</td>
+      </tr>
+    `;
+  });
+
+  document.getElementById("poTotal").innerText =
+    total.toLocaleString('en-PH', {
+      minimumFractionDigits: 2
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+document.getElementById("poSupplier").onchange = async function () {
+  let list = await getRequests();
+  let r = list[window.currentPOIndex];
+  loadPOItems(r);
+};
 
 
 
@@ -4635,14 +4745,6 @@ window.openAbstractById = openAbstractById;
   <button onclick="document.getElementById('poModal').classList.add('hidden')">Close</button>
 
 </div>
-
-
-
-
-
-
-
-
 
 </body>
 </html>
