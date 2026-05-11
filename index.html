@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -35,7 +36,6 @@ header{
   letter-spacing:1px;
   border-bottom:1px solid rgba(255,255,255,0.1);
 }
-
 
 
 .container{
@@ -1749,7 +1749,7 @@ abstractHTML += `
       ${
         (r.abstractGenerated || (r.abstractItems && r.abstractItems.length > 0))
         ? `
-          <button onclick="printAbstractById('${r.id}')">
+         <button onclick="printGeneratedAbstract('${r.id}')">
             🖨 Print Abstract
           </button>
 
@@ -1811,6 +1811,7 @@ if(
       <tr>
         <th>Date</th>
         <th>PR No.</th>
+ <th>PO No.</th>
         <th>Division</th>
         <th>Requestor</th>
         <th>Purpose</th>
@@ -1819,36 +1820,43 @@ if(
     `;
   }
 
-  poHTML += `
-  <tr>
-    <td>${
-      r.dateRequested 
-      ? new Date(r.dateRequested).toLocaleDateString('en-PH')
-      : "-"
-    }</td>
+  
+poHTML += `
+<tr>
+  <td>${r.dateRequested ? new Date(r.dateRequested).toLocaleDateString('en-PH') : "-"}</td>
+ <td>${r.prNo || '-'}</td>
 
-    <td>${r.prNo || ""}</td>
-    <td>${r.division || ""}</td>
-    <td>${r.name || ""}</td>
-    <td>${r.purpose || ""}</td>
+<td>
+  ${r.poCreated 
+    ? (r.poNo || '-') 
+    : ''
+  }
+</td>
 
-    <td>
+<td>${r.division || '-'}</td>
 
+
+
+  <td>${r.name || ""}</td>
+  <td>${r.purpose || ""}</td>
+  <td>
     ${r.poCreated ? `
-  <button onclick="openPOModal('${r.id}')">
-    🔄 Regenerate PO
-  </button>
-` : `
-  <button onclick="openPOModal('${r.id}')">
-    Create PO
-  </button>
-`}
+      <button onclick="openPOModal('${r.id}')">🔄 Regenerate PO</button>
+      <div style="color:green; font-size:11px; margin-top:4px; font-weight:bold;">
+        ✔ PO Generated
+      </div>
+    ` : `
+      <button onclick="openPOModal('${r.id}')">🧾 Create PO</button>
+    `}
+  </td>
+</tr>
+`;
 
-
-    </td>
-  </tr>
-  `;
 }
+
+
+
+
 
 
 
@@ -3937,7 +3945,9 @@ window.currentPOIndex = list.findIndex(x => x.id === id);
 
   document.getElementById("poContent").innerHTML = html;
   document.getElementById("poModal").classList.remove("hidden");
-document.getElementById("poNo").innerText = "PO-" + Date.now();
+generatePONumber().then(poNumber => {
+  document.getElementById("poNo").innerText = poNumber;
+});
 
 }
 
@@ -4030,182 +4040,569 @@ if(supplierIndex === -1){
   });
 
   // AMOUNT IN WORDS
-  function numberToWords(amount) {
-    const ones = ["", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE"];
-    const teens = ["TEN", "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN", "SIXTEEN", "SEVENTEEN", "EIGHTEEN", "NINETEEN"];
-    const tens = ["", "", "TWENTY", "THIRTY", "FORTY", "FIFTY", "SIXTY", "SEVENTY", "EIGHTY", "NINETY"];
-    
-    function convertChunk(num) {
-      if (num < 10) return ones[num];
-      if (num < 20) return teens[num - 10];
-      if (num < 100) return tens[Math.floor(num / 10)] + (num % 10 ? " " + ones[num % 10] : "");
-      return "";
+  
+
+
+function numberToWords(amount){
+
+  const ones = [
+    "", "ONE", "TWO", "THREE", "FOUR",
+    "FIVE", "SIX", "SEVEN", "EIGHT", "NINE"
+  ];
+
+  const teens = [
+    "TEN", "ELEVEN", "TWELVE", "THIRTEEN",
+    "FOURTEEN", "FIFTEEN", "SIXTEEN",
+    "SEVENTEEN", "EIGHTEEN", "NINETEEN"
+  ];
+
+  const tens = [
+    "", "", "TWENTY", "THIRTY", "FORTY",
+    "FIFTY", "SIXTY", "SEVENTY", "EIGHTY", "NINETY"
+  ];
+
+  function convertHundreds(num){
+
+    let words = "";
+
+    if(num >= 100){
+      words += ones[Math.floor(num / 100)] + " HUNDRED ";
+      num %= 100;
     }
-    
-    let result = "";
-    let num = Math.floor(amount);
-    
-    if (num >= 1000000) {
-      result += convertChunk(Math.floor(num / 1000000)) + " MILLION ";
-      num %= 1000000;
+
+    if(num >= 20){
+      words += tens[Math.floor(num / 10)] + " ";
+      num %= 10;
     }
-    if (num >= 1000) {
-      result += convertChunk(Math.floor(num / 1000)) + " THOUSAND ";
-      num %= 1000;
+    else if(num >= 10){
+      words += teens[num - 10] + " ";
+      num = 0;
     }
-    if (num > 0) {
-      result += convertChunk(num) + " PESOS";
+
+    if(num > 0){
+      words += ones[num] + " ";
     }
-    
-    if (amount % 1 !== 0) {
-      let cents = Math.round((amount % 1) * 100);
-      result += " AND " + cents + "/100 ONLY";
-    } else {
-      result += " ONLY";
-    }
-    
-    return result.toUpperCase();
+
+    return words.trim();
   }
 
-  let amountInWords = numberToWords(totalAmount);
+  function convertNumber(num){
+
+    if(num === 0) return "ZERO";
+
+    let words = "";
+
+    if(num >= 1000000){
+      words += convertHundreds(Math.floor(num / 1000000)) + " MILLION ";
+      num %= 1000000;
+    }
+
+    if(num >= 1000){
+      words += convertHundreds(Math.floor(num / 1000)) + " THOUSAND ";
+      num %= 1000;
+    }
+
+    if(num > 0){
+      words += convertHundreds(num);
+    }
+
+    return words.trim();
+  }
+
+  let whole = Math.floor(amount);
+
+  let cents = Math.round((amount - whole) * 100);
+
+  let words = convertNumber(whole);
+
+  return `${words} & ${String(cents).padStart(2,'0')}/100 PESOS`;
+}
+
+
+
+
+
+
+let amountInWords = numberToWords(totalAmount);
+
+
+
+
+
+
+
+
+  
 
   // GENERATE PO
-  let html = `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <title>Purchase Order ${poNo}</title>
-    <style>
-      @page { size: A4; margin: 15mm; }
-      * { box-sizing: border-box; }
-      body { 
-        font-family: Arial, sans-serif; 
-        font-size: 11px; 
-        margin: 0; 
-        padding: 0;
-        line-height: 1.2;
-      }
-      .header-box {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        border: 1px solid black;
-        padding: 4px 8px;
-        font-size: 9px;
-      }
-      .header { text-align: center; margin-bottom: 15px; }
-      .header h3 { margin: 5px 0; font-size: 16px; }
-      table { 
-        width: 100%; 
-        border-collapse: collapse; 
-        margin-bottom: 10px;
-      }
-      th, td { 
-        border: 1px solid black; 
-        padding: 4px 6px; 
-        text-align: center; 
-      }
-      th { background: #f5f5f5; font-weight: bold; }
-      .left { text-align: left !important; }
-      .right { text-align: right !important; }
-      .no-border td { border: none; }
-      .amount-words { 
-        border: 1px solid black; 
-        padding: 8px; 
-        margin: 15px 0;
-        font-size: 12px;
-        font-weight: bold;
-      }
-      .signatures { 
-        margin-top: 30px; 
-        display: flex; 
-        justify-content: space-between; 
-        gap: 20px;
-      }
-      .sig-box { 
-        width: 48%; 
-        text-align: center; 
-        font-size: 11px;
-      }
-      .sig-line { 
-        border-bottom: 1px solid black; 
-        margin: 50px 0 5px 0; 
-        min-height: 20px;
-      }
-      @media print {
-        body { margin: 0; }
-        .header-box { position: fixed; top: 10px; right: 10px; }
-      }
-    </style>
-  </head>
-  <body>
-    
-    <div class="header-box">
-      FASS-PUR 07-08<br>
-      Rev. 5 | 08 January 2021
-    </div>
+  
+let html = `
+<!DOCTYPE html>
+<html>
+<head>
+<title>Purchase Order</title>
 
-    <div class="header">
-      <div>Republic of the Philippines</div>
-      <div><b>DEPARTMENT OF SCIENCE AND TECHNOLOGY</b></div>
-      <div>Regional Office No. 02</div>
-      <div>Tuguegarao City, Cagayan</div>
-      <h3>PURCHASE ORDER</h3>
-    </div>
+<style>
 
-    <table>
-      <tr>
-        <td style="width:50%; vertical-align:top;">
-          <b>Supplier:</b><br>
-          <span class="left" style="font-weight:bold; font-size:12px;">${supplier}</span><br>
-          <span class="left">${address}</span>
-        </td>
-        <td style="width:50%;">
-          <div><b>PO No.:</b> ${poNo}</div>
-          <div><b>Date:</b> ${new Date(date).toLocaleDateString('en-PH')}</div>
-          <div><b>PR No.:</b> ${r.prNo}</div>
-        </td>
-      </tr>
-    </table>
+@page{
+  size:A4 portrait;
+  margin:10mm;
+}
 
-    <table style="margin-top:15px;">
-      <tr>
-        <th>Stock No.</th>
-        <th>Unit</th>
-        <th style="text-align:left;">Item Description</th>
-        <th>Qty</th>
-        <th>Unit Cost</th>
-        <th>Total Cost</th>
-      </tr>
-      ${rows}
-      <tr style="font-weight:bold; font-size:12px;">
-        <td colspan="5" class="right" style="padding:8px;">TOTAL AMOUNT:</td>
-        <td class="right" style="padding:8px;">₱${totalAmount.toLocaleString('en-PH', {minimumFractionDigits: 2})}</td>
-      </tr>
-    </table>
+body{
+  font-family:Arial;
+  font-size:12px;
+  margin:0;
+  padding:0;
+}
 
-    <div class="amount-words">
-      <b>${amountInWords}</b>
-    </div>
+.main{
+  border:2px solid black;
+  padding:8px;
+}
 
-    <div class="signatures">
-      <div class="sig-box">
-        <div style="text-align:left; margin-bottom:10px;"><b>Very truly yours,</b></div>
-        <div class="sig-line"></div>
-        <div><b>VIRGINIA G. BILGERA</b></div>
-        <div>Regional Director</div>
-      </div>
-      
-      <div class="sig-box">
-        <div style="text-align:left; margin-bottom:10px;"><b>CONFORME:</b></div>
-        <div class="sig-line"></div>
-        <div>___________________________</div>
-        <div style="font-size:10px;">(Signature over Printed Name of Supplier)</div>
-      </div>
-    </div>
+table{
+  width:100%;
+  border-collapse:collapse;
+}
 
-  </body>
-  </html>`;
+td,th{
+  border:1px solid black;
+  padding:3px;
+  vertical-align:top;
+}
+
+.center{
+  text-align:center;
+}
+
+.right{
+  text-align:right;
+}
+
+.no-border{
+  border:none !important;
+}
+
+.header{
+  text-align:center;
+  line-height:1.2;
+  position:relative;
+}
+
+.form-box{
+  position:absolute;
+  top:0;
+  right:0;
+  border:1px solid black;
+  padding:5px 10px;
+  font-size:10px;
+}
+
+.small{
+  font-size:11px;
+}
+
+.bold{
+  font-weight:bold;
+}
+
+.signature{
+  height:60px;
+}
+
+.desc{
+  min-height:350px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="main">
+
+<div class="header">
+
+<div class="form-box">
+FASS-PUR 07-08<br>
+Rev.5 / 08 January 2021
+</div>
+
+<div>Republic of the Philippines</div>
+<div><b>Department of Science and Technology</b></div>
+<div>Regional Office No.02</div>
+<div>Dalan na Paccorofun, Corner Matunung St</div>
+<div>Regional Government Center, Carig Sur, Tuguegarao City, Cagayan</div>
+
+<br>
+
+<div style="font-weight:bold;">
+PURCHASE ORDER
+</div>
+
+</div>
+
+<table>
+
+<tr>
+<td style="width:50%;">
+
+
+
+<tr>
+
+<td style="width:50%;">
+
+<table style="width:100%; border-collapse:collapse;">
+
+<tr>
+<td style="border:none; width:30%;">
+<b>PR No.:</b>
+</td>
+
+<td style="border:none;">
+${r.prNo || ''}
+</td>
+</tr>
+
+<tr>
+<td style="border:none;">
+<b>External Provider:</b>
+</td>
+
+<td style="border:none;">
+${supplier}
+</td>
+</tr>
+
+<tr>
+<td style="border:none;">
+<b>Address:</b>
+</td>
+
+<td style="border:none;">
+${address}
+</td>
+</tr>
+
+<tr>
+<td style="border:none;">
+<b>TIN:</b>
+</td>
+
+<td style="border:none;">
+________________
+</td>
+</tr>
+
+</table>
+
+</td>
+
+
+<td style="width:50%; vertical-align:top;">
+
+<div style="
+  width:100%;
+  text-align:left;
+  padding-left:20px;
+  line-height:1.8;
+">
+
+<div>
+  <b>PO No.:</b>
+  <span style="
+    display:inline-block;
+    min-width:180px;
+    border-bottom:1px solid black;
+    padding-left:10px;
+  ">
+    ${poNo}
+  </span>
+</div>
+
+<div>
+  <b>Date:</b>
+  <span style="
+    display:inline-block;
+    min-width:180px;
+    border-bottom:1px solid black;
+    padding-left:10px;
+  ">
+    ${new Date(date).toLocaleDateString('en-PH')}
+  </span>
+</div>
+
+<div style="
+  margin-top:10px;
+  text-align:center;
+">
+
+ <b>Mode of Procurement:</b><span style="
+  display:inline-block;
+  border-bottom:1px solid black;
+  margin-left:5px;
+">
+  Small Value Procurement
+</span>
+
+</div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+</table>
+</td>
+</tr>
+
+
+
+
+
+
+
+
+<tr>
+<td colspan="2">
+The Manager:
+<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;Please furnish this Office the following articles subject to the terms and conditions contained herein:
+</td>
+</tr>
+
+</table>
+
+<table>
+
+<tr>
+<td style="width:50%;">
+<b>Place of Delivery:</b> Tuguegarao City
+</td>
+
+<td style="width:50%;">
+<b>Delivery Term:</b> One Time
+</td>
+</tr>
+
+<tr>
+<td>
+<b>Date of Delivery:</b>
+${new Date(date).toLocaleDateString('en-PH')}
+</td>
+
+<td>
+<b>Payment Term:</b> 30 days
+</td>
+</tr>
+
+</table>
+
+<table>
+
+<tr>
+<th style="width:8%">Stock/<br>Property No.</th>
+<th style="width:8%">Unit</th>
+<th>Description</th>
+<th style="width:8%">Qty</th>
+<th style="width:15%">Unit Cost</th>
+<th style="width:15%">Amount</th>
+</tr>
+
+${(r.abstractItems || r.items || []).map(it=>{
+
+let price = extractNumber(
+  it.prices?.[supplierIndex] || 0
+);
+
+let qty = Number(it.qty || 0);
+
+let amount = qty * price;
+
+return `
+<tr>
+
+<td></td>
+
+<td class="center">
+${it.unit || ''}
+</td>
+
+<td class="desc">
+${(it.desc || '').replace(/\n/g,'<br>')}
+</td>
+
+<td class="center">
+${qty}
+</td>
+
+<td class="right">
+${price.toLocaleString('en-PH',{
+minimumFractionDigits:2
+})}
+</td>
+
+<td class="right">
+${amount.toLocaleString('en-PH',{
+minimumFractionDigits:2
+})}
+</td>
+
+</tr>
+`;
+
+}).join("")}
+
+<tr>
+<td colspan="5" class="bold">
+Total Amount In Words:
+<br>
+${amountInWords}
+</td>
+
+<td class="right bold">
+${totalAmount.toLocaleString('en-PH',{
+minimumFractionDigits:2
+})}
+</td>
+</tr>
+
+</table>
+
+<table>
+
+<tr>
+<td colspan="2" class="small">
+In case of failure to make the full delivery within the time specified above,
+a penalty of one-tenth (1/10) of one percent for every day of delay shall
+be imposed on the undelivered item/s.
+</td>
+</tr>
+
+<tr>
+
+<td style="width:50%; text-align:center;">
+
+  <div style="text-align:left;">
+    Conforme:
+  </div>
+
+  <br><br><br>
+
+  _________________________________
+  <br>
+
+  Signature over Printed Name of External Provider
+
+  <br><br>
+
+  ____________________
+  <br>
+  Date
+
+</td>
+
+
+
+<td style="width:50%; text-align:center;">
+
+  <div style="text-align:left;">
+    Very truly yours,
+  </div>
+
+  <br><br>
+
+  <b>VIRGINIA G. BILGERA</b>
+  <br>
+
+  Signature over Printed Name of Authorized Official
+
+  <br><br>
+
+  <span style="border-bottom:1px solid black; display:inline-block; min-width:150px;">
+    Regional Director
+  </span>
+
+  <br>
+  Designation
+
+</td>
+
+
+
+
+
+
+
+
+
+</tr>
+
+</table>
+
+<table>
+
+<tr>
+
+<td style="width:50%;">
+
+Fund Cluster:
+<br><br>
+
+Funds Available:
+<br><br><br>
+
+<div style="text-align:center;">
+<b>NANCY C. GUIMMAYEN</b><br>
+Signature over Printed Name of Chief Accountant/Head of Accounting Division/Unit
+</div>
+
+</td>
+
+<td style="width:50%;">
+
+ORS/BURS No.:
+<br><br>
+
+Date of the ORS/BURS:
+<br><br><br>
+
+Amount:
+<b>
+${totalAmount.toLocaleString('en-PH',{
+minimumFractionDigits:2
+})}
+</b>
+
+</td>
+
+</tr>
+
+</table>
+
+</div>
+
+</body>
+</html>
+`;
+
+
+
+
+
+
+
+
+
+
 
   // PRINT
   let w = window.open("", "_blank");
@@ -4219,21 +4616,22 @@ if(supplierIndex === -1){
   };
 
   // SAVE PO DATA
-  await updateDoc(doc(db, "requests", r.id), {
-    poNo: poNo,
-    poDate: date,
-    poSupplier: supplier,
-    poAddress: address,
-    poTotal: totalAmount,
-   
-status: "PO_CREATED",
-poCreated: true,
-note: "PO CREATED",
+ 
+await updateDoc(doc(db, "requests", r.id), {
+  poNo: poNo,
+  poDate: date,
+  poSupplier: supplier,
+  poAddress: address,
+  poTotal: totalAmount,
 
-poGeneratedAt: new Date().toISOString()
+  poCreated: true,
+  note: "PO CREATED",
+
+  poGeneratedAt: new Date().toISOString()
+});
 
 
-  });
+
 
   alert("✅ PO Generated & Printed Successfully!");
   document.getElementById("poModal").classList.add("hidden");
@@ -4365,59 +4763,362 @@ async function printGeneratedAbstract(id){
 }
 
 
- window.printGeneratedAbstract = async function(id) {
-    let list = await getRequests();
-    let r = list.find(x => x.id == id);
+window.printGeneratedAbstract = async function(id){
 
-    if (!r) {
-      alert("No data found.");
-      return;
-    }
+  let list = await getRequests();
+  let r = list.find(x => x.id == id);
 
-    let printWindow = window.open('', '', 'width=900,height=700');
+  if(!r){
+    alert("Request not found");
+    return;
+  }
 
-    let html = `
-      <html>
-      <head>
-        <title>Abstract of Bids</title>
-        <style>
-          body { font-family: Arial; padding: 20px; }
-          h2 { text-align: center; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th, td { border: 1px solid black; padding: 8px; text-align: center; }
-        </style>
-      </head>
-      <body>
+  if(!r.abstractGenerated || !r.abstractItems){
+    alert("⚠️ No generated abstract found.");
+    return;
+  }
 
-        <h2>ABSTRACT OF BIDS</h2>
+  let bidders = r.bidders || [];
+  let items = r.abstractItems || [];
 
-        <p><b>PR No:</b> ${r.pr_no || ''}</p>
-        <p><b>Requestor:</b> ${r.requestor || ''}</p>
-        <p><b>Purpose:</b> ${r.purpose || ''}</p>
+  // 🔥 COMPUTE LOWEST TOTAL
+  let bidderTotals = [0,0,0,0];
 
-        <table>
-          <tr>
-            <th>Description</th>
-            <th>Qty</th>
-            <th>Unit</th>
-          </tr>
-          ${(r.items || []).map(item => `
-            <tr>
-              <td>${item.description}</td>
-              <td>${item.qty}</td>
-              <td>${item.unit}</td>
-            </tr>
-          `).join('')}
-        </table>
+  items.forEach(it => {
 
-      </body>
-      </html>
+    let qty = Number(it.qty || 0);
+
+    (it.prices || []).forEach((p,idx)=>{
+
+      let price = Number(
+        String(p || 0)
+        .replace(/,/g,'')
+        .replace(/[^\d.]/g,'')
+      ) || 0;
+
+      bidderTotals[idx] += qty * price;
+
+    });
+
+  });
+
+  let lowest = Math.min(...bidderTotals.filter(x=>x>0));
+  let winnerIndex = bidderTotals.findIndex(x => x === lowest);
+
+  let rows = "";
+
+  items.forEach((it,idx)=>{
+
+    let qty = Number(it.qty || 0);
+
+    let rowPrices = (it.prices || []).map((p,pIndex)=>{
+
+      let val = Number(
+        String(p || 0)
+        .replace(/,/g,'')
+        .replace(/[^\d.]/g,'')
+      ) || 0;
+
+      let isLowest = pIndex === winnerIndex;
+
+      return `
+        <td style="
+          border:1px solid black;
+          padding:4px;
+          text-align:center;
+          font-weight:bold;
+          background:${isLowest ? '#00ff66' : 'white'};
+        ">
+          ${val.toLocaleString('en-PH',{
+            minimumFractionDigits:2
+          })}
+        </td>
+      `;
+    }).join("");
+
+    rows += `
+      <tr>
+        <td style="border:1px solid black;padding:4px;">
+          ${it.desc || ''}
+        </td>
+
+        <td style="border:1px solid black;padding:4px;text-align:center;">
+          ${qty}
+        </td>
+
+        <td style="border:1px solid black;padding:4px;text-align:center;">
+          ${it.unit || ''}
+        </td>
+
+        ${rowPrices}
+
+      </tr>
     `;
+  });
 
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.print();
+  // 🔥 TOTAL ROW
+  let totalRow = `
+    <tr style="font-weight:bold;">
+      <td colspan="3" style="border:1px solid black;padding:4px;text-align:right;">
+        TOTAL
+      </td>
+
+      ${bidderTotals.map((t,idx)=>`
+        <td style="
+          border:1px solid black;
+          padding:4px;
+          text-align:center;
+          background:${idx===winnerIndex ? '#00ff66' : 'white'};
+        ">
+          ${t.toLocaleString('en-PH',{
+            minimumFractionDigits:2
+          })}
+        </td>
+      `).join("")}
+
+    </tr>
+  `;
+
+  let html = `
+  <html>
+  <head>
+    <title>Abstract of Bids</title>
+
+    <style>
+
+      @page{
+        size:A4 landscape;
+        margin:15mm;
+      }
+
+      body{
+        font-family:Arial;
+        font-size:12px;
+      }
+
+      table{
+        width:100%;
+        border-collapse:collapse;
+      }
+
+      th,td{
+        border:1px solid black;
+      }
+
+      .center{
+        text-align:center;
+      }
+
+      .header{
+        text-align:center;
+        margin-bottom:10px;
+      }
+
+      .form-box{
+        position:absolute;
+        top:20px;
+        right:30px;
+        border:1px solid black;
+        padding:5px 10px;
+        font-size:10px;
+      }
+
+    </style>
+
+  </head>
+
+  <body>
+
+    <div class="form-box">
+      FASS-PUR 07-07<br>
+      Rev. 28 January 2021
+    </div>
+
+    <div class="header">
+
+      <div>Republic of the Philippines</div>
+      <div><b>Department of Science and Technology</b></div>
+      <div>Regional Office No. 02 - Cagayan Valley</div>
+
+      <h2>ABSTRACT OF BIDS</h2>
+
+      <div>
+        <b>Date:</b>
+        ${new Date().toLocaleDateString('en-PH')}
+      </div>
+
+      <div>
+        <b>Place:</b>
+        DOST RO2, Tuguegarao City, Cagayan
+      </div>
+
+    </div>
+
+    <br>
+
+    <table>
+
+      <tr>
+
+        <th style="width:28%">ITEM AND DESCRIPTION</th>
+        <th style="width:6%">QTY</th>
+        <th style="width:6%">UNIT</th>
+
+        ${bidders.map(b=>`
+          <th>
+            ${b}<br>
+            UNIT PRICE
+          </th>
+        `).join("")}
+
+      </tr>
+
+      ${rows}
+
+      ${totalRow}
+
+    </table>
+
+    <br><br>
+
+    <div style="margin-top:20px;">
+      We hereby certify that we had verified this Abstract of Bids
+      against the Price Quotation submitted by the external providers.
+    </div>
+
+    <br><br><br>
+
+    <table style="border:none;">
+
+      <tr style="border:none;">
+
+        <td style="border:none;text-align:center;">
+          <b>JUNVIE M. LANGCAY</b><br>
+          BAC Secretariat
+        </td>
+
+        <td style="border:none;text-align:center;">
+          <b>CLAUDENCE JOYCE V. BATANG</b><br>
+          BAC Vice Chairperson
+        </td>
+
+        <td style="border:none;text-align:center;">
+          <b>ROWENA A. GUZMAN</b><br>
+          BAC Member
+        </td>
+
+        <td style="border:none;text-align:center;">
+          <b>MARY ANN D. CARPISO</b><br>
+          BAC Member
+        </td>
+
+      </tr>
+
+    </table>
+
+   <br><br>
+
+
+<br><br>
+
+<div style="
+  margin-top:20px;
+  font-size:12px;
+">
+  We hereby certify that we had verified this Abstract of Bids
+  against the Price Quotation submitted by the external providers.
+</div>
+
+<br><br><br>
+
+<div style="
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  text-align:center;
+">
+
+  <div style="width:24%;">
+    <b>JUNVIE M. LANGCAY</b><br>
+    BAC Secretariat
+  </div>
+
+  <div style="width:24%;">
+    <b>CLAUDENCE JOYCE V. BATANG</b><br>
+    BAC Vice Chairperson
+  </div>
+
+  <div style="width:24%;">
+    <b>ROWENA A. GUZMAN</b><br>
+    BAC Member
+  </div>
+
+  <div style="width:24%;">
+    <b>MARY ANN D. CARPISO</b><br>
+    BAC Member
+  </div>
+
+</div>
+
+<br><br><br><br>
+
+<div style="
+  width:100%;
+  display:flex;
+  justify-content:space-around;
+  text-align:center;
+">
+
+  <div style="width:30%;">
+    <b>RAQUEL B. SANTOS</b><br>
+    BAC Member
+  </div>
+
+  <div style="width:30%;">
+    <b>MARY ANN P. MAGLASIN</b><br>
+    BAC Chairperson
+  </div>
+
+  <div style="width:30%;">
+    <b>VIRGINIA G. BILGERA</b><br>
+    Regional Director
+  </div>
+
+</div>
+
+<br><br><br>
+
+<div style="
+  text-align:center;
+  font-size:20px;
+  font-weight:bold;
+">
+  Lowest Bidder:
+  ${bidders[winnerIndex] || '-'}
+</div>
+
+
+
+
+  </body>
+  </html>
+  `;
+
+  let w = window.open("","_blank");
+
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+
+  w.onload = function(){
+
+    w.focus();
+    w.print();
+
   };
+
+};
+
 
 async function openAbstractById(id){
   let list = await getRequests();
@@ -4537,11 +5238,64 @@ function loadPOItems(r) {
 
 
 
+
+
+
 document.getElementById("poSupplier").onchange = async function () {
   let list = await getRequests();
   let r = list[window.currentPOIndex];
   loadPOItems(r);
 };
+
+
+
+async function generatePONumber(){
+
+  let list = await getRequests();
+
+  let now = new Date();
+
+  let year = now.getFullYear();
+  let month = String(now.getMonth() + 1).padStart(2, '0');
+
+  // 🔥 FILTER CURRENT YEAR + MONTH
+  let currentMonthPOs = list.filter(r => {
+
+    if(!r.poNo) return false;
+
+    return r.poNo.startsWith(`${year}-${month}-`);
+
+  });
+
+  // 🔥 GET LAST NUMBER
+  let lastNumber = 0;
+
+  currentMonthPOs.forEach(r => {
+
+    let parts = r.poNo.split("-");
+
+    let num = parseInt(parts[2]) || 0;
+
+    if(num > lastNumber){
+      lastNumber = num;
+    }
+
+  });
+
+  // 🔥 NEXT NUMBER
+  let nextNumber = lastNumber + 1;
+
+  // 🔥 FORMAT: 001
+  let formatted = String(nextNumber).padStart(3, '0');
+
+  return `${year}-${month}-${formatted}`;
+}
+
+
+
+
+
+
 
 
 
