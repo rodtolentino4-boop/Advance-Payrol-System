@@ -1,6 +1,3 @@
-
-
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -1389,8 +1386,6 @@ else if(r.status === "FOR_TOS_CANVASS"){
 });
 
 
-
-
 if(pendingCount === 0){
   ordPending.innerHTML = `
     <p style="text-align:center; color:gray;">
@@ -1457,7 +1452,7 @@ async function loadReview(){
     if(currentUser.role==="TOS" && r.status==="FOR_TOS_CANVASS"){
       pendingHTML += buildCard(r,i,`
         <textarea id="remarks${i}" placeholder="Remarks"></textarea>
-        <button onclick="approveCanvass(${i})">Approve Canvass</button>
+        <button onclick="approveCanvass('${r.id}')">Approve Canvass</button>
         <textarea id="rejectReason_${r.id}" placeholder="Reason for rejection"></textarea>
         <button onclick="reject('${r.id}')">Reject</button>
       `);
@@ -1724,9 +1719,7 @@ if(r.status === "APPROVED_ORD" || r.status === "CANVASSED"){
   canvassHTML += buildCard(r, i, actions);
 }
 
-
 // ✅ SECTION 2: FOR ABSTRACT (AFTER REVIEW)
-
 
 if(
   r.status === "APPROVED_CANVASS_TOS" ||
@@ -1749,7 +1742,6 @@ if(
     abstractStarted = true;
   }
 
-  
 
 abstractHTML += `
   <tr>
@@ -1768,8 +1760,8 @@ abstractHTML += `
         (r.abstractGenerated || (r.abstractItems && r.abstractItems.length > 0))
         ? `
          <button onclick="printGeneratedAbstract('${r.id}')">
-            🖨 Print Abstract
-          </button>
+            🖨 View Bidders
+         </button>
 
           <button onclick="openAbstractById('${r.id}')">
             🔁 Regenerate Abstract
@@ -1797,24 +1789,13 @@ ${r.abstractGenerated
   `
 }
 
-
-
         `
       }
     </td>
   </tr>
 `;
 
-
-
-
-
 }
-
-
-
-
-
 
 // ✅ SECTION 3: PURCHASE ORDER TABLE
 
@@ -1873,11 +1854,6 @@ poHTML += `
 }
 
 
-
-
-
-
-
 // ✅ RECORDS SECTION (APPROVED BY ORD + FLOW)
 
 if(
@@ -1921,7 +1897,6 @@ if(!recordsHTML.includes("<table>")){
   }
 </td>
 
-
       <td>${r.prNo || ""}</td>
       <td>${r.division || ""}</td>
       <td>${r.name || ""}</td>
@@ -1937,10 +1912,7 @@ if(!recordsHTML.includes("<table>")){
   `;
 }
 
-
-
 });
-
 
 if(abstractStarted){
   abstractHTML += "</table>";
@@ -2001,9 +1973,6 @@ async function printPR(id){
 
   printPRDirect(r);
 }
-
-
-
 
 async function updateORDNotification(){
   let list = await getRequests();
@@ -2147,7 +2116,8 @@ async function printCanvass(i){
   NOTE:<br>
   1. ALL ENTRIES MUST BE TYPEWRITTEN<br>
   2. DELIVERY PERIOD WITHIN ______ CALENDAR DAYS<br>
-  3. WARRANTY SHALL BE FOR A PERIOD OF SIX (6) MONTHS FOR SUPPLIES & MATERIALS, ONE (1) YEAR FOR EQUIPMENT.<br>
+  3. WARRANTY SHALL BE FOR A PERIOD OF SIX (6) MONTHS FOR SUPPLIES & MATERIALS, ONE (1) YEAR FOR EQUIPMENT,<br>
+         FROM DATE OF ACCEPTANCE BY THE PROCURING ENTITY<br>
   4. PRICE VALIDITY SHALL BE FOR A PERIOD OF ___ CALENDAR DAYS<br>
   5. PAYMENT WILL BE CREDITED TO SUPPLIER'S BANK ACCOUNT<br>
   </p>
@@ -2226,7 +2196,6 @@ async function printCanvass(i){
 }
 
 
-
 async function createPO(id){
   let list = await getRequests();
   let r = list.find(x => x.id === id);
@@ -2257,17 +2226,10 @@ async function createPO(id){
 });
 
 
-
-
   // auto-select first supplier
   document.getElementById("poSupplier").value = r.bidders[0];
 
   document.getElementById("poModal").classList.remove("hidden");
-
-
-
-
-
 
 
   // 🔥 IMPORTANT: clear table first
@@ -2275,11 +2237,7 @@ async function createPO(id){
 }
 
 
-
-
-
 //let currentAbstractIndex = null;
-
 
 
 async function openAbstract(i){
@@ -2361,7 +2319,6 @@ if(bidders.length === 0){
 }
 
 
-
   let rows = "";
   let totals = [0,0,0,0];
 
@@ -2407,10 +2364,6 @@ ${raw.map((val,i)=>`
 `).join("")}
 
 
-
-
-
-
   </tr>
   `;
 });
@@ -2421,8 +2374,6 @@ if(rows === ""){
   alert("Please select at least one item!");
   return;
 }
-
-
 
   let minTotal = Math.min(...totals);
 let overallWinnerIndex = totals.indexOf(minTotal);
@@ -2513,8 +2464,6 @@ td, th {
   margin-top: 40px;
   border-top: 1px solid black;
 }
-
-
 
 
 table {
@@ -2620,8 +2569,6 @@ table {
 </div>
 
 
-
-
   <table>
 
    <tr>
@@ -2707,16 +2654,7 @@ We hereby certify that we had verified this Abstract of Bids against the Price Q
 </div>
 
 
-
-
-
-
-
-
-
-
 </div>
-
 
 
   <h3 style="margin-top:20px;">Lowest Bidder: ${overallWinner}</h3>
@@ -2790,21 +2728,10 @@ await updateDoc(doc(db, "requests", r.id), {
     .filter(x => x !== null)
 });
 
-
-
-
-
-
-
-
-
 alert("📊 Abstract generated successfully!");
   closeAbstract();
   loadAdmin();
 }
-
-
-
 
 function showAdminSection(section){
 
@@ -2842,8 +2769,6 @@ if(section === "users"){
 
 }
 
-
-
 async function viewRequest(i){
   let list = await getRequests();
   let r = list[i];
@@ -2854,10 +2779,16 @@ async function viewRequest(i){
 }
 
 
+async function approveCanvass(id){
 
-async function approveCanvass(i){
   let list = await getRequests();
-  let r = list[i];
+
+  let r = list.find(x => x.id === id);
+
+  if(!r){
+    alert("Request not found");
+    return;
+  }
 
   let remarks = document.getElementById("remarks"+i)?.value || "";
 
@@ -2880,15 +2811,11 @@ async function approveCanvass(i){
 }
 
 
-
-
-
 function extractNumber(val){
   if(!val) return 0;
   let match = val.toString().match(/[\d,.]+/);
   return match ? Number(match[0].replace(/,/g,'')) : 0;
 }
-
 
 async function loadUsers(){
 let users = await getUsers();
@@ -3018,7 +2945,6 @@ async function getUsers(){
   return list;
 }
 
-
 async function getRequests(){
   const querySnapshot = await getDocs(collection(db, "requests"));
   let list = [];
@@ -3032,8 +2958,6 @@ async function getRequests(){
 
   return list;
 }
-
-
 
 window.login = login;
 window.logout = logout;
@@ -3069,10 +2993,6 @@ async function viewRequestById(id){
   printPRDirect(r); 
 }
 
-
-
-
-
 function printPRDirect(r) {
  if (!r.prNo) {
   r.prNo = "N/A";
@@ -3090,8 +3010,6 @@ const cost = item.cost ? Number(item.cost) : '';
 const hasValue = qty && cost;
 
 const lineTotal = hasValue ? qty * cost : '';
-
-
 
    if(lineTotal !== '') {
   runningTotal += lineTotal;
@@ -3136,9 +3054,6 @@ const lineTotal = hasValue ? qty * cost : '';
     margin: 0;
   }
 
-  
-
- 
 
  .print-body {
   margin: 0; /* 👈 FIX */
@@ -3199,8 +3114,6 @@ body {
 }
 
 
-
-
       h2, h3 {
         text-align: center;
         margin: 5px 0;
@@ -3217,7 +3130,6 @@ th, td {
   font-size: 9pt;   /* 🔥 mas maliit text */
   vertical-align: top;
 }
-
 
 
       th {
@@ -3283,7 +3195,6 @@ tfoot {
 }
 
 
-
 .purpose-section {
   border: 1px solid black;
   padding: 5px;
@@ -3325,7 +3236,6 @@ body {
   margin: 0;
   font-family: Arial;
 }
-
 
 
 
@@ -3566,14 +3476,6 @@ table {
 </tr>
 </tfoot>
 
-
-
-
-
-
-
-
-
     </div>
  </div>
   </body>
@@ -3604,8 +3506,6 @@ table {
   w.print();
 };
 }
-
-
 
 
 async function printCanvassById(id){
@@ -3869,13 +3769,9 @@ window.confirmReject = async function () {
 };
 
 
-
-
 window.closeApproveModal = function(){
   document.getElementById("approveModal").classList.add("hidden");
 }
-
-
 
 
 function isRejected(status){
@@ -3888,8 +3784,6 @@ function isRejected(status){
 window.openPOModal = async function(id){
   let list = await getRequests();
   let r = list.find(x => x.id === id);
-
-
 
 
 // 🔥 LOAD ALL BIDDERS TO DROPDOWN
@@ -3917,17 +3811,6 @@ window.currentPOIndex = list.findIndex(x => x.id === id);
 document.getElementById("poSupplier").value = "";
 
 loadPOItems(r);
-
-
-
-
-
-
-
-
-
-
-
 
 
   if(!r){
@@ -3983,9 +3866,6 @@ window.closePOModal = function(){
 }
 
 
-
-
-
 window.printPO = async function(){
  
 if(!window.currentPO){
@@ -3999,7 +3879,6 @@ if(!r.abstractItems || r.abstractItems.length === 0){
   alert("⚠️ Please generate Abstract first.");
   return;
 }
-
 
 
 if(!r.bidders || r.bidders.length === 0){
@@ -4059,7 +3938,6 @@ if(supplierIndex === -1){
 
   // AMOUNT IN WORDS
   
-
 
 function numberToWords(amount){
 
@@ -4137,20 +4015,7 @@ function numberToWords(amount){
 }
 
 
-
-
-
-
 let amountInWords = numberToWords(totalAmount);
-
-
-
-
-
-
-
-
-  
 
   // GENERATE PO
   
@@ -4267,7 +4132,6 @@ PURCHASE ORDER
 <td style="width:50%;">
 
 
-
 <tr>
 
 <td style="width:50%;">
@@ -4370,23 +4234,9 @@ ________________
 </div>
 
 
-
-
-
-
-
-
-
-
 </table>
 </td>
 </tr>
-
-
-
-
-
-
 
 
 <tr>
@@ -4529,7 +4379,6 @@ be imposed on the undelivered item/s.
 </td>
 
 
-
 <td style="width:50%; text-align:center;">
 
   <div style="text-align:left;">
@@ -4553,12 +4402,6 @@ be imposed on the undelivered item/s.
   Designation
 
 </td>
-
-
-
-
-
-
 
 
 
@@ -4613,15 +4456,6 @@ minimumFractionDigits:2
 `;
 
 
-
-
-
-
-
-
-
-
-
   // PRINT
   let w = window.open("", "_blank");
   w.document.write(html);
@@ -4649,15 +4483,9 @@ await updateDoc(doc(db, "requests", r.id), {
 });
 
 
-
-
   alert("✅ PO Generated & Printed Successfully!");
   document.getElementById("poModal").classList.add("hidden");
 };
-
-
-
-
 
 
 function loadSuppliers() {
@@ -5116,8 +4944,6 @@ window.printGeneratedAbstract = async function(id){
 </div>
 
 
-
-
   </body>
   </html>
   `;
@@ -5139,6 +4965,7 @@ window.printGeneratedAbstract = async function(id){
 
 
 async function openAbstractById(id){
+
   let list = await getRequests();
   let r = list.find(x => x.id === id);
 
@@ -5150,6 +4977,12 @@ async function openAbstractById(id){
   window.currentAbstractId = r.id;
 
   document.getElementById("absPR").innerText = r.prNo || "";
+
+  // 🔥 LOAD SAVED BIDDERS
+  document.getElementById("b1").value = r.bidders?.[0] || "";
+  document.getElementById("b2").value = r.bidders?.[1] || "";
+  document.getElementById("b3").value = r.bidders?.[2] || "";
+  document.getElementById("b4").value = r.bidders?.[3] || "";
 
   let html = `
   <table>
@@ -5166,16 +4999,58 @@ async function openAbstractById(id){
   `;
 
   (r.items || []).forEach((it,idx)=>{
+
+    // 🔥 CHECK IF ITEM EXISTS IN SAVED ABSTRACT
+    let savedItem = (r.abstractItems || []).find(a =>
+      a.desc === it.desc &&
+      String(a.qty) === String(it.qty)
+    );
+
     html += `
     <tr>
-      <td><input type="checkbox" id="sel_${idx}"></td>
-      <td>${it.desc}</td>
-      <td>${it.qty}</td>
-      <td>${it.unit}</td>
-      <td><input id="p_${idx}_0"></td>
-      <td><input id="p_${idx}_1"></td>
-      <td><input id="p_${idx}_2"></td>
-      <td><input id="p_${idx}_3"></td>
+
+      <td>
+        <input 
+          type="checkbox"
+          id="sel_${idx}"
+          ${savedItem ? "checked" : ""}
+        >
+      </td>
+
+      <td>${it.desc || ''}</td>
+
+      <td>${it.qty || ''}</td>
+
+      <td>${it.unit || ''}</td>
+
+      <td>
+        <input 
+          id="p_${idx}_0"
+          value="${savedItem?.prices?.[0] || ''}"
+        >
+      </td>
+
+      <td>
+        <input 
+          id="p_${idx}_1"
+          value="${savedItem?.prices?.[1] || ''}"
+        >
+      </td>
+
+      <td>
+        <input 
+          id="p_${idx}_2"
+          value="${savedItem?.prices?.[2] || ''}"
+        >
+      </td>
+
+      <td>
+        <input 
+          id="p_${idx}_3"
+          value="${savedItem?.prices?.[3] || ''}"
+        >
+      </td>
+
     </tr>
     `;
   });
@@ -5183,8 +5058,32 @@ async function openAbstractById(id){
   html += `</table>`;
 
   document.getElementById("absItemsTable").innerHTML = html;
-  document.getElementById("abstractModal").classList.remove("hidden");
+
+  document.getElementById("abstractModal")
+    .classList.remove("hidden");
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 function loadPOItems(r) {
@@ -5278,15 +5177,6 @@ function loadPOItems(r) {
 }
 
 
-
-
-
-
-
-
-
-
-
 window.recomputePO = function(){
 
   if(!window.currentPO) return;
@@ -5354,18 +5244,6 @@ window.recomputePOGrandTotal = function(){
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 document.getElementById("poSupplier").onchange = async function () {
   let list = await getRequests();
   let r = list[window.currentPOIndex];
@@ -5416,14 +5294,6 @@ async function generatePONumber(){
   return `${year}-${month}-${formatted}`;
 }
 
-
-
-
-
-
-
-
-
 window.printCanvassById = printCanvassById;
 window.viewRequestById = viewRequestById;
 window.printGeneratedAbstract = printGeneratedAbstract;
@@ -5433,10 +5303,6 @@ window.cancelRequest = cancelRequest;
 window.retrieveRequest = retrieveRequest;
 window.deleteRequest = deleteRequest;
 window.openAbstractById = openAbstractById;
-
-
-
-
 
 </script>
 
@@ -5459,11 +5325,7 @@ window.openAbstractById = openAbstractById;
   <button onclick="closeAbstract()">Close</button>
 </div>
 
-
 <!-- PR MODAL -->
-
-
-
 <div id="prModal" class="hidden" style="
   position:fixed;
   top:0; left:0;
@@ -5555,7 +5417,6 @@ window.openAbstractById = openAbstractById;
   </div>
 </div>
 
-
 <div id="approveModal" class="hidden" style="
   position:fixed;
   top:0; left:0;
@@ -5585,10 +5446,7 @@ window.openAbstractById = openAbstractById;
   </div>
 </div>
 
-
-
 <div class="animated-bg"></div>
-
 
 </div>
 
