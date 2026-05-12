@@ -4,7 +4,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Integrated Procurement Processing System</title>
+<title>Integrated PR System</title>
 
 <style>
 
@@ -452,6 +452,27 @@ th.bidder-col::after {
 }
 
 
+.main{
+  border:2px solid black;
+  padding:0;   /* alisin spacing */
+}
+
+.main table{
+  border-collapse:collapse;
+}
+
+.main > table:first-of-type{
+  border-top:none; /* alisin top border ng first table */
+}
+
+
+
+
+
+
+
+
+
 
 </style>
 </head>
@@ -461,11 +482,11 @@ th.bidder-col::after {
 <header style="text-align:center; padding:18px;">
  
   <div style="font-size:16px; font-weight:600;">
-    LEX B. TOLENTINO
+    Department of Science and Technology
   </div>
 
   <div style="font-size:14px; opacity:0.9;">
-    Doctor of Philosophy in Information Technology (DIT)
+    Regional Office No. 02 • Cagayan Valley
   </div>
 
   <div style="margin-top:6px; font-size:18px; font-weight:700; letter-spacing:1px;">
@@ -5165,6 +5186,7 @@ async function openAbstractById(id){
   document.getElementById("abstractModal").classList.remove("hidden");
 }
 
+
 function loadPOItems(r) {
 
   let supplier = document.getElementById("poSupplier").value.trim();
@@ -5187,43 +5209,149 @@ function loadPOItems(r) {
     </tr>
   `;
 
-  let total = 0;
+  let grandTotal = 0;
 
-  (r.abstractItems || r.items || []).forEach(it => {
+  (r.abstractItems || r.items || []).forEach((it, idx) => {
 
-    let rawPrice = it.prices?.[bidderIndex] || 0;
+    let qty = Number(it.qty || 0);
 
-    let price = Number(
-      String(rawPrice)
-        .replace(/,/g, "")
-        .replace(/[^\d.-]/g, "")
-    ) || 0;
+    let price = extractNumber(
+      it.prices?.[bidderIndex] || it.cost || 0
+    );
 
-    let qty = parseFloat(it.qty || 0);
-    let amount = price * qty;
+    let amount = qty * price;
 
-    total += amount;
+    grandTotal += amount;
 
-    table.innerHTML += `
+    let row = `
       <tr>
-        <td>${it.unit || ''}</td>
-        <td>${it.desc || ''}</td>
-        <td>${qty}</td>
-        <td>₱${price.toLocaleString()}</td>
-        <td>₱${amount.toLocaleString()}</td>
+
+        <td>
+          <input id="po_unit_${idx}" value="${it.unit || ''}">
+        </td>
+
+        <td>
+          <textarea id="po_desc_${idx}">${it.desc || ''}</textarea>
+        </td>
+
+        <td>
+          <input 
+            type="number"
+            id="po_qty_${idx}"
+            value="${qty}"
+            oninput="recomputePO()"
+          >
+        </td>
+
+        <td>
+          <input 
+            type="number"
+            id="po_price_${idx}"
+            value="${price}"
+            oninput="recomputePO()"
+          >
+        </td>
+
+        <td>
+          <input 
+            type="number"
+            id="po_amount_${idx}"
+            value="${amount.toFixed(2)}"
+            readonly
+          >
+        </td>
+
       </tr>
     `;
+
+    table.innerHTML += row;
+
   });
 
   document.getElementById("poTotal").innerText =
-    total.toLocaleString('en-PH', {
-      minimumFractionDigits: 2
+    grandTotal.toLocaleString('en-PH', {
+      minimumFractionDigits:2
     });
+
+  document.getElementById("poWords").innerText =
+    numberToWords(grandTotal);
 }
 
 
 
 
+
+
+
+
+
+
+
+window.recomputePO = function(){
+
+  if(!window.currentPO) return;
+
+  let r = window.currentPO;
+
+  let total = 0;
+
+  (r.abstractItems || r.items || []).forEach((it, idx)=>{
+
+    let qty = parseFloat(
+      document.getElementById(`po_qty_${idx}`)?.value || 0
+    );
+
+    let price = parseFloat(
+      document.getElementById(`po_price_${idx}`)?.value || 0
+    );
+
+    let amount = qty * price;
+
+    let amountInput = document.getElementById(`po_amount_${idx}`);
+
+    if(amountInput){
+      amountInput.value = amount.toFixed(2);
+    }
+
+    total += amount;
+
+  });
+
+  document.getElementById("poTotal").innerText =
+    total.toLocaleString('en-PH', {
+      minimumFractionDigits:2
+    });
+
+  document.getElementById("poWords").innerText =
+    numberToWords(total);
+}
+
+
+window.recomputePOGrandTotal = function(){
+
+  if(!window.currentPO) return;
+
+  let r = window.currentPO;
+
+  let total = 0;
+
+  (r.abstractItems || r.items || []).forEach((it, idx)=>{
+
+    let amount = parseFloat(
+      document.getElementById(`po_amount_${idx}`)?.value || 0
+    );
+
+    total += amount;
+  });
+
+  document.getElementById("poTotal").innerText =
+    total.toLocaleString('en-PH', {
+      minimumFractionDigits:2
+    });
+
+  document.getElementById("poWords").innerText =
+    numberToWords(total);
+}
 
 
 
