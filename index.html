@@ -822,19 +822,41 @@ th.bidder-col::after {
   <h3>👤 User Management</h3>
 
   <h4>Add User</h4>
-<input id="newFullName" placeholder="Full Name">
-  <input id="newUsername" placeholder="Username">
-  <input id="newPassword" placeholder="Password">
-  
-  <select id="newRole">
-    <option value="STAFF">STAFF</option>
-    <option value="ORD">ORD</option>
-    <option value="TOS">TOS</option>
-    <option value="FASS">FASS</option>
-    <option value="ADMIN">ADMIN</option>
-  </select>
 
-  <button onclick="addUser()">Add User</button>
+<input id="newFullName" placeholder="Full Name">
+
+<input id="newUsername" placeholder="Username">
+
+<input id="newPassword"
+type="password"
+placeholder="Password">
+
+<select id="newRole">
+  <option value="STAFF">STAFF</option>
+  <option value="ORD">ORD</option>
+  <option value="TOS">TOS</option>
+  <option value="FASS">FASS</option>
+  <option value="ADMIN">ADMIN</option>
+</select>
+
+<!-- SIGNATURE -->
+<input
+type="file"
+id="signatureFile"
+accept="image/*">
+
+<img
+id="signaturePreview"
+style="
+max-height:80px;
+margin-top:10px;
+display:block;
+">
+
+<button onclick="addUser()">Add User</button>
+
+
+
 
   <h4>Existing Users</h4>
   <div id="userList"></div>
@@ -932,6 +954,8 @@ th.bidder-col::after {
 
 <script type="module">
 
+
+
 import { 
   getAuth, 
   signInWithEmailAndPassword,
@@ -940,6 +964,7 @@ import {
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
+
 import { 
   getFirestore, 
   collection, 
@@ -947,14 +972,22 @@ import {
   getDocs, 
   updateDoc, 
   doc,
-  onSnapshot
+  onSnapshot,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
 
 import { getStorage, ref, uploadBytes, getDownloadURL } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 
 import { deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+let currentUser = null;
+let signatureBase64 = "";
+
+
 
 let cachedRequests = [];
 
@@ -1061,7 +1094,9 @@ document.getElementById("ordLoggedUser").innerText =
 // USERS
 
 
-let currentUser=null;
+
+
+let selectedUserForPasswordReset = null;
 
 // LOGIN
 window.login = async function(){
@@ -1303,8 +1338,11 @@ if(window.retrievedId){
   window.retrievedId = null;
 }
 
+data.requestorSignature = currentUser.signature || "";
 
-  await addDoc(collection(db, "requests"), data);
+await addDoc(collection(db, "requests"), data);
+  
+
 document.getElementById("supportFile").value = "";
 
 alert("Submitted!");
@@ -1629,9 +1667,13 @@ async function approveORD(id){
     let prNumber = await generatePR();
 
     await updateDoc(doc(db, "requests", id), {
-      status: "APPROVED_ORD",
-      prNo: prNumber
-    });
+  status: "APPROVED_ORD",
+  prNo: prNumber,
+  ordApprovedBy: currentUser.fullName,
+  ordSignature: currentUser.signature,
+  ordApprovedDate: new Date().toISOString()
+});
+
 
     alert("✅ Approved!");
     // ❌ REMOVE loadORD()
@@ -3206,9 +3248,52 @@ let users = await getUsers();
        <td>${u.fullName || "-"}</td>
 <td>${u.email}</td>
 <td>${u.role}</td>
-        <td>
-         ${u.email !== "admin@email.com" ? `<button onclick="deleteUser(${i})">Delete</button>` : '---'}
-        </td>
+       
+
+
+<td style="display:flex; gap:6px; justify-content:center;">
+
+  ${u.email !== "admin@email.com" ? `
+
+  <button onclick="editUser('${u.id}')"
+      style="
+        background:#f59e0b;
+        color:white;
+        border:none;
+        padding:6px 12px;
+        border-radius:6px;
+        cursor:pointer;
+        font-weight:600;
+      ">
+      Edit
+    </button>
+
+    <button onclick="deleteUser(${i})"
+      style="
+        background:#ef4444;
+        color:white;
+        border:none;
+        padding:6px 12px;
+        border-radius:6px;
+        cursor:pointer;
+        font-weight:600;
+      ">
+      Delete
+    </button>
+
+  ` : '---'}
+
+</td>
+
+
+
+
+
+
+
+
+
+
       </tr>
     `;
   });
@@ -3221,6 +3306,30 @@ let users = await getUsers();
 
 import { createUserWithEmailAndPassword } 
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+
+document.getElementById("signatureFile")
+.addEventListener("change", function(e){
+
+  let file = e.target.files[0];
+  if(!file) return;
+
+  let reader = new FileReader();
+
+  reader.onload = function(evt){
+
+    signatureBase64 = evt.target.result;
+
+    document.getElementById("signaturePreview").src =
+      signatureBase64;
+  };
+
+  reader.readAsDataURL(file);
+
+});
+
+
+
 
 
 async function addUser(){
@@ -3247,12 +3356,16 @@ async function addUser(){
       password
     );
 
-    await addDoc(collection(db, "users"), {
-      uid: userCred.user.uid,
-      email: email.toLowerCase().trim(),
-      role,
-      fullName
-    });
+   
+await addDoc(collection(db, "users"), {
+  uid: userCred.user.uid,
+  email: email.toLowerCase().trim(),
+  role,
+  fullName,
+  signature: signatureBase64
+});
+
+
 
     alert("✅ User created!");
     loadUsers();
@@ -3262,6 +3375,26 @@ newFullName.value = "";
 newUsername.value = "";
 newPassword.value = "";
 newRole.value = "STAFF"; // optional default
+
+
+
+signatureBase64 = "";
+
+document.getElementById("signatureFile").value = "";
+
+document.getElementById("signaturePreview").src = "";
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     // 🔥 IMPORTANT
@@ -3274,19 +3407,77 @@ newRole.value = "STAFF"; // optional default
 
 
 async function deleteUser(i){
+
   let users = await getUsers();
   let u = users[i];
 
+  let confirmDelete = confirm(
+    `Are you sure you want to delete ${u.fullName || u.email}?`
+  );
+
+  if(!confirmDelete) return;
+
   await deleteDoc(doc(db, "users", u.id));
+
+  alert("User deleted successfully!");
+
   loadUsers();
 }
+
+
+window.editUser = async function(index){
+
+  try{
+
+    let users = await getUsers();
+
+    let user = users[index];
+
+    if(!user){
+      alert("User not found");
+      return;
+    }
+
+    let newName = prompt(
+      "Edit Full Name:",
+      user.fullName || ""
+    );
+
+    if(newName === null) return;
+
+    let newRole = prompt(
+      "Edit Role (STAFF, ORD, TOS, FASS, ADMIN):",
+      user.role || ""
+    );
+
+    if(newRole === null) return;
+
+    await updateDoc(
+      doc(db,"users",user.id),
+      {
+        fullName:newName.trim(),
+        role:newRole.trim().toUpperCase()
+      }
+    );
+
+    alert("User updated successfully!");
+
+    loadUsers();
+
+  }catch(err){
+    console.error(err);
+    alert(err.message);
+  }
+
+}
+
 
 
 function listenRequests(callback){
   onSnapshot(collection(db, "requests"), (snapshot)=>{
     cachedRequests = [];
 
-    snapshot.forEach(doc=>{
+    snapshot.forEach((doc)=>{
       cachedRequests.push({
         id: doc.id,
         ...doc.data()
@@ -3297,34 +3488,51 @@ function listenRequests(callback){
   });
 }
 
+
+
+
 async function getUsers(){
+
   const querySnapshot = await getDocs(collection(db, "users"));
+
   let list = [];
 
   querySnapshot.forEach((docSnap) => {
+
     let data = docSnap.data();
 
     list.push({
       id: docSnap.id,
+      uid: data.uid || "",
       email: (data.email || "").toLowerCase().trim(),
       role: data.role || "",
-      fullName: data.fullName || ""
+      fullName: data.fullName || "",
+      signature: data.signature || "" // 🔥 IMPORTANT
     });
+
   });
 
   return list;
 }
 
+
+
+
+
+
+
+
+
 async function getRequests(){
   const querySnapshot = await getDocs(collection(db, "requests"));
   let list = [];
 
-  querySnapshot.forEach((docSnap) => {
-    list.push({
-      id: docSnap.id,
-      ...docSnap.data()
-    });
-  });
+ querySnapshot.forEach((docSnap) => {
+ list.push({
+  id: docSnap.id,
+  ...docSnap.data()
+});
+});
 
   return list;
 }
@@ -3363,8 +3571,10 @@ async function viewRequestById(id){
   printPRDirect(r); 
 }
 
-function printPRDirect(r) {
- if (!r.prNo) {
+async function printPRDirect(r){
+  if (!r.prNo) {
+
+
   r.prNo = "N/A";
 }
 if (!r.items) r.items = [];   
@@ -3410,6 +3620,20 @@ const lineTotal = hasValue ? qty * cost : '';
   ? new Date(r.dateRequested).toLocaleDateString('en-PH')
   : new Date().toLocaleDateString('en-PH');
  
+
+
+let ordSignature = r.approverSignature || "";
+
+
+
+
+
+
+
+
+
+
+
  const html = `
   <html>
   <head>
@@ -3823,20 +4047,47 @@ table {
   <div class="signature-section">
 
     <div class="sig-box">
-      <b>Requested by:</b><br><br>
-      ___________________________<br>
-      ${r.name || ''}<br>
-      ${r.position || ''}
-    </div>
+  <b>Requested by:</b><br>
 
-    <div class="sig-box">
-      <b>Approved by:</b><br><br>
-      ___________________________<br>
-      ${r.approverName || 'VIRGINIA G. BILGERA'}<br>
-      ${r.approverTitle || 'Regional Director'}
-    </div>
+  ${
+    r.requestorSignature
+    ? `<img src="${r.requestorSignature}"
+         style="
+           height:60px;
+           display:block;
+           margin:auto;
+           margin-bottom:5px;
+         ">`
+    : "<br><br>"
+  }
 
-  </div>
+  ___________________________<br>
+  ${r.name || ''}<br>
+  ${r.position || ''}
+</div>
+
+
+   <div class="sig-box">
+  <b>Approved by:</b><br>
+
+  ${
+    ordSignature
+    ? `<img src="${ordSignature}"
+         style="
+           height:60px;
+           display:block;
+           margin:auto;
+           margin-bottom:5px;
+         ">`
+    : "<br><br>"
+  }
+
+  ___________________________<br>
+
+  ${r.approverName || 'VIRGINIA G. BILGERA'}<br>
+  ${r.approverTitle || 'Regional Director'}
+</div>
+
 
   <div style="text-align:right; font-size:10px; margin-top:10px;">
     Page <span class="pageNumber"></span>
@@ -4101,10 +4352,15 @@ window.confirmApprove = async function(){
 
   let prNumber = await generatePR();
 
-  await updateDoc(doc(db, "requests", window.currentApproveId), {
-    status: "APPROVED_ORD",
-    prNo: prNumber
-  });
+ await updateDoc(doc(db, "requests", window.currentApproveId), {
+  status: "APPROVED_ORD",
+  prNo: prNumber,
+
+  // 🔥 SAVE APPROVER INFO
+  approverName: currentUser.fullName || "VIRGINIA G. BILGERA",
+  approverRole: currentUser.role || "ORD",
+  approverSignature: currentUser.signature || ""
+});
 
   alert("✅ Approved!");
   closeApproveModal();
@@ -5663,6 +5919,34 @@ async function generatePONumber(){
 
   return `${year}-${month}-${formatted}`;
 }
+
+
+
+
+
+
+
+document.getElementById("signatureFile")
+.addEventListener("change", function(e){
+
+  let file = e.target.files[0];
+
+  if(!file) return;
+
+  let reader = new FileReader();
+
+  reader.onload = function(evt){
+
+    signatureBase64 = evt.target.result;
+
+    document.getElementById("signaturePreview").src =
+      signatureBase64;
+  };
+
+  reader.readAsDataURL(file);
+
+});
+
 
 window.printCanvassById = printCanvassById;
 window.viewRequestById = viewRequestById;
