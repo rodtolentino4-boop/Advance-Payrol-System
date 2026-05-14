@@ -465,6 +465,41 @@ th.bidder-col::after {
 
 
 
+.signature-wrapper{
+  position:relative;
+  text-align:center;
+  line-height:1.1;
+}
+
+.signature-img{
+  height:85px;
+  display:block;
+  margin:0 auto -55px auto;
+  position:relative;
+  top:20px;
+  z-index:2;
+  mix-blend-mode:multiply;
+}
+
+
+.signature-wrapper{
+  position:relative;
+  text-align:center;
+}
+
+.signature-img{
+  height:60px;
+  display:block;
+  margin:0 auto -18px auto;
+  position:relative;
+  z-index:2;
+  mix-blend-mode:multiply;
+}
+
+
+
+
+
 
 
 
@@ -1070,8 +1105,8 @@ document.getElementById("ordLoggedUser").innerText =
 
   reviewTitle.innerText =
     found.role==="TOS"
-    ? "TECHNICAL REVIEW"
-    : "ADMINISTRATIVE REVIEW";
+    ? "TECHNICAL OPERATION SERVICES"
+    : "FINANCE & ADMINISTRATIVE SUPPORT SERVICES";
 
   loadReview();
 
@@ -2568,9 +2603,51 @@ async function printCanvass(i){
         APPROVED FOR CANVASS:
       </div>
 
-      <div class="line"></div>
-      <b>${approverName}</b><br>
-      ${approverTitle}
+    
+${
+  r.canvassApproverSignature
+  ? `
+    <img src="${r.canvassApproverSignature}"
+      style="
+        height:55px;
+        display:block;
+        margin-bottom:-8px;
+        margin-left:auto;
+        margin-right:auto;
+        mix-blend-mode:multiply;
+      ">
+
+    <div style="
+      font-size:8px;
+      text-align:center;
+      
+margin-top:2px;
+margin-bottom:2px;
+position:relative;
+z-index:5;
+background:white;
+display:inline-block;
+padding:0 3px;
+
+
+
+    ">
+      Digitally Signed ${new Date().toLocaleDateString('en-US')}
+    </div>
+  `
+  : "<br>"
+}
+
+<div class="signature-wrapper">
+
+  <div class="line"></div>
+
+  <b>${r.canvassApproverName || approverName || ''}</b><br>
+  ${r.canvassApproverRole || approverTitle || ''}
+
+
+
+
 
       <br><br>
 
@@ -3210,10 +3287,16 @@ async function approveCanvass(id){
     newStatus = "APPROVED_CANVASS_FASS";
   }
 
-  await updateDoc(doc(db, "requests", r.id), {
-    status: newStatus,
-    remarks
-  });
+ 
+await updateDoc(doc(db, "requests", r.id), {
+  status: newStatus,
+  remarks,
+
+  canvassApproverName: currentUser.fullName || "",
+  canvassApproverSignature: currentUser.signature || "",
+  canvassApproverRole: currentUser.role || ""
+});
+
 
   alert("✅ Canvass Approved!");
 
@@ -4670,16 +4753,28 @@ body{
   padding:8px;
 }
 
+
 table{
   width:100%;
   border-collapse:collapse;
+  font-size:10px;
 }
 
-td,th{
+th, td{
   border:1px solid black;
-  padding:3px;
-  vertical-align:top;
+  padding:2px 4px;
+  line-height:1.1;
 }
+
+th{
+  font-size:10px;
+}
+
+td{
+  height:18px;
+}
+
+
 
 .center{
   text-align:center;
@@ -6137,5 +6232,66 @@ window.openAbstractById = openAbstractById;
 
 </div>
 
+
+
+<br><br>
+
+<button onclick="printPO()">🖨 Print PO</button>
+<button onclick="document.getElementById('poModal').classList.add('hidden')">Close</button>
+
+</div>
+
+<script>
+
+// Disable Right Click
+document.addEventListener('contextmenu', event => event.preventDefault());
+
+// Disable Dev Shortcut Keys
+document.onkeydown = function(e) {
+
+  // F12
+  if (e.keyCode == 123) {
+    return false;
+  }
+
+  // CTRL + SHIFT + I
+  if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) {
+    return false;
+  }
+
+  // CTRL + SHIFT + J
+  if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) {
+    return false;
+  }
+
+  // CTRL + U
+  if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) {
+    return false;
+  }
+
+  // CTRL + SHIFT + C
+  if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) {
+    return false;
+  }
+
+};
+
+</script>
+
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
